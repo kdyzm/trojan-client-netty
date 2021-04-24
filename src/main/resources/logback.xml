@@ -16,7 +16,7 @@
     <property name="log.app_name" value="http-demo"/>
     <!-- 日志最大的历史 30天 -->
     <property name="log.maxHistory" value="30"/>
-    <property name="log.level" value="trace"/>
+    <property name="log.level" value="info"/>
     <property name="log.maxSize" value="5MB" />
 
     <!-- ConsoleAppender 控制台输出日志 -->
