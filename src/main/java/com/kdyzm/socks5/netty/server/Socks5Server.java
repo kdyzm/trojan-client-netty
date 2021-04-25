@@ -2,7 +2,9 @@ package com.kdyzm.socks5.netty.server;
 
 import com.kdyzm.socks5.netty.inbound.Socks5CommandRequestInboundHandler;
 import com.kdyzm.socks5.netty.inbound.Socks5InitialRequestInboundHandler;
+import com.kdyzm.socks5.netty.inbound.Socks5PasswordAuthRequestInboundHandler;
 import com.kdyzm.socks5.netty.properties.ConfigProperties;
+import com.kdyzm.socks5.netty.properties.UsersProperties;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -10,6 +12,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.socksx.v5.Socks5CommandRequestDecoder;
 import io.netty.handler.codec.socksx.v5.Socks5InitialRequestDecoder;
+import io.netty.handler.codec.socksx.v5.Socks5PasswordAuthRequestDecoder;
 import io.netty.handler.codec.socksx.v5.Socks5ServerEncoder;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,8 @@ import org.springframework.stereotype.Component;
 public class Socks5Server {
 
     private final ConfigProperties configProperties;
+
+    private final UsersProperties usersProperties;
 
     public void start() throws InterruptedException {
         EventLoopGroup clientWorkGroup = new NioEventLoopGroup();
@@ -46,8 +51,13 @@ public class Socks5Server {
 
                             //处理socks5初始化请求
                             pipeline.addLast(new Socks5InitialRequestDecoder());
-                            pipeline.addLast(new Socks5InitialRequestInboundHandler());
+                            pipeline.addLast(new Socks5InitialRequestInboundHandler(configProperties));
 
+                            //处理认证请求
+                            if(configProperties.isAuthentication()){
+                                pipeline.addLast(new Socks5PasswordAuthRequestDecoder());
+                                pipeline.addLast(new Socks5PasswordAuthRequestInboundHandler(usersProperties));
+                            }
                             //处理connection请求
                             pipeline.addLast(new Socks5CommandRequestDecoder());
                             pipeline.addLast(new Socks5CommandRequestInboundHandler(clientWorkGroup));

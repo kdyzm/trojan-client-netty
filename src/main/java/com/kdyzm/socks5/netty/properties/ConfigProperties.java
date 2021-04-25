@@ -18,7 +18,7 @@ public class ConfigProperties {
      * 是否认证的开关
      */
     @Value("${authentication}")
-    private String authentication;
+    private boolean authentication;
 
     /**
      * 服务绑定的端口号

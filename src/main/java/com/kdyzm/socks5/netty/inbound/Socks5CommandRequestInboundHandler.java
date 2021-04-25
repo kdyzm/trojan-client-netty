@@ -1,14 +1,12 @@
 package com.kdyzm.socks5.netty.inbound;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.bootstrap.BootstrapConfig;
 import io.netty.channel.*;
-import io.netty.channel.nio.NioEventLoop;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.socksx.v5.*;
 import io.netty.util.ReferenceCountUtil;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -16,13 +14,10 @@ import lombok.extern.slf4j.Slf4j;
  * @date 2021-04-23
  */
 @Slf4j
+@AllArgsConstructor
 public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHandler<DefaultSocks5CommandRequest> {
 
     private EventLoopGroup eventExecutors;
-
-    public Socks5CommandRequestInboundHandler(EventLoopGroup eventExecutors) {
-        this.eventExecutors = eventExecutors;
-    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg) throws Exception {

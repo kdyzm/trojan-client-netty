@@ -2,7 +2,6 @@ package com.kdyzm.socks5.netty.inbound;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
 import lombok.extern.slf4j.Slf4j;
 
 /**
