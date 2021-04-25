@@ -23,6 +23,7 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 public class Main {
 
     public static void main(String[] args) throws InterruptedException {
+        log.info("socks5 netty server is starting ......");
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
         ctx.register(Config.class);
         ctx.refresh();

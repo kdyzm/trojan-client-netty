@@ -27,6 +27,7 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg) throws Exception {
         log.debug("receive commandRequest type={}", msg.type());
+        Socks5AddressType socks5AddressType = msg.dstAddrType();
         if (!msg.type().equals(Socks5CommandType.CONNECT)) {
             log.debug("receive commandRequest type={}", msg.type());
             ReferenceCountUtil.retain(msg);
@@ -53,11 +54,11 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                     log.debug("目标服务器连接成功");
                     //添加客户端转发请求到服务端的Handler
                     ctx.pipeline().addLast(new Client2DestInboundHandler(future));
-                    DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, Socks5AddressType.IPv4);
+                    DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5AddressType);
                     ctx.writeAndFlush(commandResponse);
                 } else {
                     log.error("连接目标服务器失败,address={},port={}", msg.dstAddr(), msg.dstPort());
-                    DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, Socks5AddressType.IPv4);
+                    DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, socks5AddressType);
                     ctx.writeAndFlush(commandResponse);
                     future.channel().close();
                 }

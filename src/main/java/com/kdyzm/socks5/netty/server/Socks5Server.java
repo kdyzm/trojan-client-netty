@@ -53,8 +53,8 @@ public class Socks5Server {
                             pipeline.addLast(new Socks5CommandRequestInboundHandler(clientWorkGroup));
                         }
                     });
-            ChannelFuture future = bootstrap.bind(1081).sync();
-            log.info("socks5 netty server has started");
+            ChannelFuture future = bootstrap.bind(configProperties.getServerPort()).sync();
+            log.info("socks5 netty server has started on port {}", configProperties.getServerPort());
             future.channel().closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
