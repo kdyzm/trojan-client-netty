@@ -4,6 +4,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.socksx.v5.*;
 import io.netty.util.ReferenceCountUtil;
 import lombok.AllArgsConstructor;
@@ -37,8 +38,12 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
         if (inBlackList(msg.dstAddr())) {
             log.info("{} 地址在黑名单中，拒绝连接", msg.dstAddr());
             //假装连接成功
-            DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, socks5AddressType);
+            DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5AddressType);
             ctx.writeAndFlush(commandResponse);
+            ctx.pipeline().addLast("HttpServerCodec",new HttpServerCodec());
+            ctx.pipeline().addLast(new BlackListInboundHandler());
+            ctx.pipeline().remove(Socks5CommandRequestInboundHandler.class);
+            ctx.pipeline().remove(Socks5CommandRequestDecoder.class);
             return;
         }
         log.debug("准备连接目标服务器，ip={},port={}", msg.dstAddr(), msg.dstPort());
