@@ -9,6 +9,8 @@ import io.netty.util.ReferenceCountUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Set;
+
 /**
  * @author kdyzm
  * @date 2021-04-23
@@ -19,6 +21,8 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
 
     private EventLoopGroup eventExecutors;
 
+    private Set<String> blackList;
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg) throws Exception {
         log.debug("receive commandRequest type={}", msg.type());
@@ -27,6 +31,14 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
             log.debug("receive commandRequest type={}", msg.type());
             ReferenceCountUtil.retain(msg);
             ctx.fireChannelRead(msg);
+            return;
+        }
+        //检查黑名单
+        if (inBlackList(msg.dstAddr())) {
+            log.info("{} 地址在黑名单中，拒绝连接", msg.dstAddr());
+            //假装连接成功
+            DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, socks5AddressType);
+            ctx.writeAndFlush(commandResponse);
             return;
         }
         log.debug("准备连接目标服务器，ip={},port={}", msg.dstAddr(), msg.dstPort());
@@ -61,5 +73,14 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 }
             }
         });
+    }
+
+    private boolean inBlackList(String dstAddr) {
+        for (String black : blackList) {
+            if (dstAddr.toLowerCase().endsWith(black)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

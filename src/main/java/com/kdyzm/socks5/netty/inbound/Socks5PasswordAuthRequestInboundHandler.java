@@ -1,6 +1,6 @@
 package com.kdyzm.socks5.netty.inbound;
 
-import com.kdyzm.socks5.netty.properties.UsersProperties;
+import com.kdyzm.socks5.netty.properties.ConfigUtil;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -16,13 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 public class Socks5PasswordAuthRequestInboundHandler extends SimpleChannelInboundHandler<DefaultSocks5PasswordAuthRequest> {
 
-    private final UsersProperties usersProperties;
+    private final ConfigUtil configUtil;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultSocks5PasswordAuthRequest msg) throws Exception {
         log.debug("用户名：{}，密码：{}", msg.username(), msg.password());
         //认证成功
-        if (usersProperties.getUsers().get(msg.username()).equals(msg.password().trim())) {
+        if (configUtil.getUsers().get(msg.username()).equals(msg.password().trim())) {
             Socks5PasswordAuthResponse passwordAuthResponse = new DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus.SUCCESS);
             ctx.writeAndFlush(passwordAuthResponse);
             ctx.pipeline().remove(this);

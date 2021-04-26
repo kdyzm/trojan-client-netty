@@ -31,4 +31,10 @@ public class ConfigProperties {
      */
     @Value("${authentication.path}")
     private String authenticationPath;
+
+    /**
+     * 黑名单路径
+     */
+    @Value("${blacklist.path}")
+    private String blacklistPath;
 }

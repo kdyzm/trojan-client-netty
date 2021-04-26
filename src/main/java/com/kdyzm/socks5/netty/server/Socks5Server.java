@@ -4,7 +4,7 @@ import com.kdyzm.socks5.netty.inbound.Socks5CommandRequestInboundHandler;
 import com.kdyzm.socks5.netty.inbound.Socks5InitialRequestInboundHandler;
 import com.kdyzm.socks5.netty.inbound.Socks5PasswordAuthRequestInboundHandler;
 import com.kdyzm.socks5.netty.properties.ConfigProperties;
-import com.kdyzm.socks5.netty.properties.UsersProperties;
+import com.kdyzm.socks5.netty.properties.ConfigUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -29,7 +29,7 @@ public class Socks5Server {
 
     private final ConfigProperties configProperties;
 
-    private final UsersProperties usersProperties;
+    private final ConfigUtil configUtil;
 
     public void start() throws InterruptedException {
         EventLoopGroup clientWorkGroup = new NioEventLoopGroup();
@@ -56,11 +56,11 @@ public class Socks5Server {
                             //处理认证请求
                             if(configProperties.isAuthentication()){
                                 pipeline.addLast(new Socks5PasswordAuthRequestDecoder());
-                                pipeline.addLast(new Socks5PasswordAuthRequestInboundHandler(usersProperties));
+                                pipeline.addLast(new Socks5PasswordAuthRequestInboundHandler(configUtil));
                             }
                             //处理connection请求
                             pipeline.addLast(new Socks5CommandRequestDecoder());
-                            pipeline.addLast(new Socks5CommandRequestInboundHandler(clientWorkGroup));
+                            pipeline.addLast(new Socks5CommandRequestInboundHandler(clientWorkGroup, configUtil.getBlackList()));
                         }
                     });
             ChannelFuture future = bootstrap.bind(configProperties.getServerPort()).sync();

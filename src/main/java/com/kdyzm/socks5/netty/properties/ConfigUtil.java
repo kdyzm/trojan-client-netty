@@ -1,17 +1,11 @@
 package com.kdyzm.socks5.netty.properties;
 
-import com.kdyzm.socks5.netty.models.UsernameAndPasswordModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.PostConstruct;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -20,14 +14,16 @@ import java.util.*;
  */
 @Component
 @Slf4j
-public class UsersProperties {
+public class ConfigUtil {
 
     private Map<String, String> users = new HashMap<>();
 
     private ConfigProperties configProperties;
 
+    private Set<String> blackList = new HashSet<>();
+
     @Autowired
-    public UsersProperties(ConfigProperties configProperties) {
+    public ConfigUtil(ConfigProperties configProperties) {
         this.configProperties = configProperties;
     }
 
@@ -49,6 +45,29 @@ public class UsersProperties {
             properties.load(new FileReader(authenticationPath));
             properties.forEach((key, value) -> users.put(key.toString().trim(), value.toString().trim()));
             return users;
+        }
+    }
+
+    /**
+     * 从配置文件中读取用户名和密码配置
+     *
+     * @return list
+     */
+    public Set<String> getBlackList() throws IOException {
+        if (!CollectionUtils.isEmpty(blackList)) {
+            return blackList;
+        }
+        synchronized (this) {
+            if (!CollectionUtils.isEmpty(blackList)) {
+                return blackList;
+            }
+            String blacklistPath = configProperties.getBlacklistPath();
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(blacklistPath)));
+            String str;
+            while ((str = bufferedReader.readLine()) != null) {
+                blackList.add(str.toLowerCase(Locale.ROOT));
+            }
+            return blackList;
         }
     }
 
