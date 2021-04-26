@@ -51,6 +51,8 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                     ctx.pipeline().addLast(new Client2DestInboundHandler(future));
                     DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5AddressType);
                     ctx.writeAndFlush(commandResponse);
+                    ctx.pipeline().remove(Socks5CommandRequestInboundHandler.class);
+                    ctx.pipeline().remove(Socks5CommandRequestDecoder.class);
                 } else {
                     log.error("连接目标服务器失败,address={},port={}", msg.dstAddr(), msg.dstPort());
                     DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, socks5AddressType);

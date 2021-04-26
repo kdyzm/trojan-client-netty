@@ -3,10 +3,7 @@ package com.kdyzm.socks5.netty.inbound;
 import com.kdyzm.socks5.netty.properties.ConfigProperties;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.socksx.v5.DefaultSocks5InitialRequest;
-import io.netty.handler.codec.socksx.v5.DefaultSocks5InitialResponse;
-import io.netty.handler.codec.socksx.v5.Socks5AuthMethod;
-import io.netty.handler.codec.socksx.v5.Socks5InitialResponse;
+import io.netty.handler.codec.socksx.v5.*;
 import io.netty.util.ReferenceCountUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,9 +31,11 @@ public class Socks5InitialRequestInboundHandler extends SimpleChannelInboundHand
         if(configProperties.isAuthentication()){
             Socks5InitialResponse socks5InitialResponse = new DefaultSocks5InitialResponse(Socks5AuthMethod.PASSWORD);
             ctx.writeAndFlush(socks5InitialResponse);
-            return;
+        }else{
+            Socks5InitialResponse socks5InitialResponse = new DefaultSocks5InitialResponse(Socks5AuthMethod.NO_AUTH);
+            ctx.writeAndFlush(socks5InitialResponse);
         }
-        Socks5InitialResponse socks5InitialResponse = new DefaultSocks5InitialResponse(Socks5AuthMethod.NO_AUTH);
-        ctx.writeAndFlush(socks5InitialResponse);
+        ctx.pipeline().remove(this);
+        ctx.pipeline().remove(Socks5InitialRequestDecoder.class);
     }
 }

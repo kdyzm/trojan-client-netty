@@ -4,10 +4,7 @@ import com.kdyzm.socks5.netty.properties.UsersProperties;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.socksx.v5.DefaultSocks5PasswordAuthRequest;
-import io.netty.handler.codec.socksx.v5.DefaultSocks5PasswordAuthResponse;
-import io.netty.handler.codec.socksx.v5.Socks5PasswordAuthResponse;
-import io.netty.handler.codec.socksx.v5.Socks5PasswordAuthStatus;
+import io.netty.handler.codec.socksx.v5.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,6 +25,8 @@ public class Socks5PasswordAuthRequestInboundHandler extends SimpleChannelInboun
         if (usersProperties.getUsers().get(msg.username()).equals(msg.password().trim())) {
             Socks5PasswordAuthResponse passwordAuthResponse = new DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus.SUCCESS);
             ctx.writeAndFlush(passwordAuthResponse);
+            ctx.pipeline().remove(this);
+            ctx.pipeline().remove(Socks5PasswordAuthRequestDecoder.class);
             return;
         }
         Socks5PasswordAuthResponse passwordAuthResponse = new DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus.FAILURE);
