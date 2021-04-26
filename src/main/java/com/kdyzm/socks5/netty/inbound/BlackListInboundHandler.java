@@ -20,6 +20,8 @@ import java.io.RandomAccessFile;
 @AllArgsConstructor
 public class BlackListInboundHandler extends ChannelInboundHandlerAdapter {
 
+    private final String blackListPath;
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (!(msg instanceof HttpRequest)) {
@@ -34,7 +36,7 @@ public class BlackListInboundHandler extends ChannelInboundHandlerAdapter {
             log.info("不处理 /favicon.ico 请求");
             return;
         }
-        RandomAccessFile file = new RandomAccessFile("./blacklist.html", "r");
+        RandomAccessFile file = new RandomAccessFile(blackListPath, "r");
         HttpResponse response = new DefaultHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
         boolean keepAlive = HttpUtil.isKeepAlive(request);
@@ -50,5 +52,10 @@ public class BlackListInboundHandler extends ChannelInboundHandlerAdapter {
         }
         file.close();
         ctx.flush();
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().close();
     }
 }

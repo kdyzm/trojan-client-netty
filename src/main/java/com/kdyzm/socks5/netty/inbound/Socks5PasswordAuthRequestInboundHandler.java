@@ -20,7 +20,6 @@ public class Socks5PasswordAuthRequestInboundHandler extends SimpleChannelInboun
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultSocks5PasswordAuthRequest msg) throws Exception {
-        log.debug("用户名：{}，密码：{}", msg.username(), msg.password());
         //认证成功
         if (configUtil.getUsers().get(msg.username()).equals(msg.password().trim())) {
             Socks5PasswordAuthResponse passwordAuthResponse = new DefaultSocks5PasswordAuthResponse(Socks5PasswordAuthStatus.SUCCESS);

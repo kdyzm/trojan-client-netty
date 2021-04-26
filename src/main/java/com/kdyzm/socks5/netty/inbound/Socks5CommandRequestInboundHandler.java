@@ -1,5 +1,6 @@
 package com.kdyzm.socks5.netty.inbound;
 
+import com.kdyzm.socks5.netty.properties.ConfigProperties;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
@@ -24,9 +25,10 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
 
     private Set<String> blackList;
 
+    private ConfigProperties configProperties;
+    
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg) throws Exception {
-        log.debug("receive commandRequest type={}", msg.type());
         Socks5AddressType socks5AddressType = msg.dstAddrType();
         if (!msg.type().equals(Socks5CommandType.CONNECT)) {
             log.debug("receive commandRequest type={}", msg.type());
@@ -41,7 +43,7 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
             DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5AddressType);
             ctx.writeAndFlush(commandResponse);
             ctx.pipeline().addLast("HttpServerCodec",new HttpServerCodec());
-            ctx.pipeline().addLast(new BlackListInboundHandler());
+            ctx.pipeline().addLast(new BlackListInboundHandler(configProperties.getBlacklistPath()));
             ctx.pipeline().remove(Socks5CommandRequestInboundHandler.class);
             ctx.pipeline().remove(Socks5CommandRequestDecoder.class);
             return;
