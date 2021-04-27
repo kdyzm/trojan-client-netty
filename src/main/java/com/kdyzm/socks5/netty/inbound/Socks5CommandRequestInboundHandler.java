@@ -25,8 +25,6 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
 
     private Set<String> blackList;
 
-    private ConfigProperties configProperties;
-    
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg) throws Exception {
         Socks5AddressType socks5AddressType = msg.dstAddrType();
@@ -43,7 +41,7 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
             DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5AddressType);
             ctx.writeAndFlush(commandResponse);
             ctx.pipeline().addLast("HttpServerCodec",new HttpServerCodec());
-            ctx.pipeline().addLast(new BlackListInboundHandler(configProperties.getBlacklistPath()));
+            ctx.pipeline().addLast(new BlackListInboundHandler());
             ctx.pipeline().remove(Socks5CommandRequestInboundHandler.class);
             ctx.pipeline().remove(Socks5CommandRequestDecoder.class);
             return;
