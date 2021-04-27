@@ -10,7 +10,9 @@ import io.netty.util.CharsetUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.io.RandomAccessFile;
+import java.net.URL;
 
 /**
  * @author kdyzm
@@ -34,7 +36,9 @@ public class BlackListInboundHandler extends ChannelInboundHandlerAdapter {
             log.info("不处理 /favicon.ico 请求");
             return;
         }
-        RandomAccessFile file = new RandomAccessFile("./blacklist.html", "r");
+        URL resource = this.getClass().getClassLoader().getResource("./blacklist.html");
+        assert resource != null;
+        RandomAccessFile file = new RandomAccessFile(new File(resource.getFile()), "r");
         HttpResponse response = new DefaultHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
         boolean keepAlive = HttpUtil.isKeepAlive(request);

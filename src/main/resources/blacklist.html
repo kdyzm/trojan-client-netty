@@ -1,0 +1,155 @@
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>URL过滤</title>
+    <link href="../css/terminal.css" rel="stylesheet" type="text/css">
+
+    <script language="JavaScript" type="text/JavaScript">
+
+        // Added by csz in [2011-9-13] for the customize for malaysia: access denied page should show ip addr information etc.
+        var strShow = "According to the access control policy, you are not allowed to access this website. If you have any doubt, please contact the network administrator.";
+
+        function getParamString(name) {
+            var strHref = window.location.href;
+            var intPos = strHref.indexOf("?");
+            if (-1 == intPos) {
+                return '';
+            }
+
+            var strRight = strHref.substr(intPos + 1);  // get the parameter from url
+            var parameters = strRight.split("&");
+
+            var pos, paraName, paraValue;
+
+            for (var i = 0; i < parameters.length; i++) {
+                // get psoition of equality operator
+                pos = parameters[i].indexOf('=');
+                if (pos == -1) {
+                    continue;
+                }
+
+                // get name and value from url
+                paraName = parameters[i].substring(0, pos);
+                paraValue = parameters[i].substring(pos + 1);
+
+                // if name search hit, then return current value. And restore + operator to blank space  
+                if (paraName == name) {
+                    return decodeURIComponent(paraValue.replace(/\+/g, " "));
+                }
+            }
+
+            return '';
+        }
+
+        function onInit() {
+            //var strIp   = getParamString("ip");
+            var strType = getParamString("url_type");
+            var strPlc = getParamString("plc_name");
+
+            if (strPlc.indexOf("#") > -1) {
+                strPlc = strPlc.match(/(.*)#/)[1];
+            }
+            document.getElementById("strType").innerHTML = strType;
+            document.getElementById("strPlc").innerHTML = strPlc;
+        }
+
+    </script>
+    <style type="text/css">
+        body {
+            font: 15px "Microsoft Yahei", Arial, Helvetica, sans-serif, "宋体";
+            color: #333;
+            background-color: #e7e8e9;
+            letter-spacing: 0.05em;
+        }
+
+        #content {
+            border: 1px solid #DCDDE2;
+            background-color: #fff;
+            margin: 40px 50px;
+            padding: 30px 40px 50px 40px;
+        }
+
+        h1 {
+            margin: 3px 0;
+            height: 32px;
+            font-size: 19px;
+            color: #1f1f1f;
+            line-height: 35px;
+        }
+
+        b {
+            font-weight: bold;
+            color: #1F1F1F;
+        }
+
+        p {
+            margin: 8px 1px;
+        }
+
+        ol {
+            margin-top: 5px;
+        }
+
+        .warning {
+            /*background: url(../img/warning.gif) no-repeat left;*/
+            /*padding-left: 35px;*/
+        }
+
+        .partition {
+            background-color: #00AEEF;
+            height: 2px;
+            margin-bottom: 8px;
+            font-size: 1px;
+        }
+
+        .partition_left {
+            background-color: #005AAB;
+            height: 2px;
+            border-right: #FFF solid 1px;
+            display: block
+        }
+
+        .buttons input {
+            border-style: none;
+            /*background: url(../img/buttons.gif) no-repeat;*/
+            height: 22px;
+            width: 80px;
+            font-size: 12px;
+            margin-top: 25px;
+            cursor: pointer
+        }
+
+        .b_distance {
+            padding-bottom: 12px;
+        }
+
+        /*针对小屏幕移动端*/
+        @media only screen and (max-width: 480px),(max-height: 400px),(max-device-width: 240px) {
+            #content {
+                margin: 20px 10px;
+                padding: 20px 20px 40px 20px
+            }
+
+            .link, .data-field {
+                margin-left: 0px
+            }
+
+            .button_hide {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+
+<body onload="onInit()">
+<div id="content">
+    <h1 class="warning">访问被拒绝</h1>
+    <div class="partition"><span class="partition_left" style="width:220px;"></span></div>
+    <div name="ContentShow" id="ContentShow">
+        <p class="b_distance">您尝试访问的网站类型属于[<span style="color: red">黑名单地址</span>]已经被上网策略拒绝访问。如工作需要，请登录OA系统申请权限或者拨打电话xxx咨询。</p>
+    </div>
+</div>
+
+</body>
+</html>
