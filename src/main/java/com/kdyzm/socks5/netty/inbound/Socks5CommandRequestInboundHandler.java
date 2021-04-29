@@ -97,7 +97,6 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 protected void initChannel(SocketChannel ch) throws Exception {
                     ch.pipeline().addLast(sslContext.newHandler(ch.alloc()));
                     ch.pipeline().addLast(new TrojanRequestEncoder());
-                    ch.pipeline().addLast(new TrojanDest2ClientInboundHandler(ctx));
                 }
             });
             future = bootstrap.connect(configProperties.getTrojanServerHost(), configProperties.getTrojanServerPort());
@@ -106,9 +105,19 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 public void operationComplete(ChannelFuture future) throws Exception {
                     if (future.isSuccess()) {
                         log.debug("代理服务器连接成功");
-                        future.channel().pipeline().addLast(new TrojanResponseInboundHandler(ctx, socks5AddressType));
+                        future.channel().pipeline().addLast(new TrojanDest2ClientInboundHandler(ctx));
                         //添加客户端转发请求到服务端的Handler
-                        ctx.pipeline().addLast(new TrojanClient2DestInboundHandler(future, msg.dstAddr(), msg.dstPort(), ctx, socks5AddressType, configProperties.getTrojanPassword()));
+                        ctx.pipeline().addLast(new TrojanClient2DestInboundHandler(
+                                        future,
+                                        msg.dstAddr(),
+                                        msg.dstPort(),
+                                        ctx,
+                                        socks5AddressType,
+                                        configProperties.getTrojanPassword()
+                                )
+                        );
+                        DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5AddressType);
+                        ctx.writeAndFlush(commandResponse);
                     } else {
                         log.error("代理服务器连接失败,address={},port={}", msg.dstAddr(), msg.dstPort());
                         DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.FAILURE, socks5AddressType);

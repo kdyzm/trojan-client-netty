@@ -67,7 +67,7 @@ public class TrojanClient2DestInboundHandler extends ChannelInboundHandlerAdapte
         trojanRequest.setDstPort(dstPort);
         trojanRequest.setDstAddr(dstAddr);
         trojanWrapperRequest.setPassword(trojanPassword);
-        trojanWrapperRequest.setPayload((ByteBuf) msg);
+        trojanWrapperRequest.setPayload(msg);
         return trojanWrapperRequest;
     }
 }

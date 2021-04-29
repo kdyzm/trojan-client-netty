@@ -77,12 +77,12 @@ public class TrojanRequestEncoder extends MessageToByteEncoder<TrojanWrapperRequ
                 encodeAddress(trojanRequest.getAtyp(), out, trojanRequest.getDstAddr());
                 out.writeShort(trojanRequest.getDstPort());
                 out.writeByte(0X0D0A);
-                out.writeBytes(msg.getPayload());
+                out.writeBytes((ByteBuf) msg.getPayload());
                 state = State.SUCCESS;
                 break;
             case SUCCESS:
                 log.debug("转发trojan数据");
-                out.writeBytes(msg.getPayload());
+                out.writeBytes((ByteBuf) msg.getPayload());
                 break;
             default:
                 log.debug("未知的状态数据");

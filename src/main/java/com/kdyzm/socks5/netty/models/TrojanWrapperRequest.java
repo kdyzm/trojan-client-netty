@@ -14,5 +14,5 @@ public class TrojanWrapperRequest {
 
     private TrojanRequest trojanRequest;
     
-    private ByteBuf payload;
+    private Object payload;
 }
