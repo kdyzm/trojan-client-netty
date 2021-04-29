@@ -1,4 +1,1 @@
-google.com
-baidu.com
-qq.com
-cosmoplat.com
+adobe.com

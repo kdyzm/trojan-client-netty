@@ -37,4 +37,28 @@ public class ConfigProperties {
      */
     @Value("${blacklist.path}")
     private String blacklistPath;
+
+    /**
+     * 是否启用trojan代理
+     */
+    @Value("${trojan.enabel}")
+    private boolean trojanEnable;
+
+    /**
+     * trojan服务器地址
+     */
+    @Value("${trojan.server.host}")
+    private String trojanServerHost;
+
+    /**
+     * trojan服务器端口号
+     */
+    @Value("${trojan.server.port}")
+    private int trojanServerPort;
+
+    /**
+     * trojan密码
+     */
+    @Value("${trojan.password}")
+    private String trojanPassword;
 }

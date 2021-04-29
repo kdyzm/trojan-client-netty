@@ -19,7 +19,7 @@ public class Dest2ClientInboundHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-//        log.trace("开始写回客户端");
+        log.trace("开始写回客户端");
         clientChannelHandlerContext.writeAndFlush(msg);
     }
 
