@@ -9,7 +9,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -47,25 +46,48 @@ public class TrojanRequestEncoder extends MessageToByteEncoder<TrojanWrapperRequ
      *     o  DST.ADDR desired destination address
      *     o  DST.PORT desired destination port in network octet order
      * </pre>
-     *
-     * @param ctx
-     * @param msg
-     * @param out
-     * @throws Exception
      */
+
+    enum State {
+        /**
+         *
+         */
+        INIT,
+        SUCCESS
+    }
+
+    private State state;
+
+    public TrojanRequestEncoder() {
+        this.state = State.INIT;
+    }
+
     @Override
     protected void encode(ChannelHandlerContext ctx, TrojanWrapperRequest msg, ByteBuf out) throws Exception {
         log.debug("请求代理服务器发起trojan协议握手");
-        String password = Sha256Util.encryptThisString(msg.getPassword());
-        TrojanRequest trojanRequest = msg.getTrojanRequest();
-        out.writeCharSequence(password, StandardCharsets.UTF_8);
-        out.writeByte(0X0D0A);
-        out.writeByte(trojanRequest.getCmd());
-        out.writeByte(trojanRequest.getAtyp());
-        encodeAddress(trojanRequest.getAtyp(), out, trojanRequest.getDstAddr());
-        out.writeShort(trojanRequest.getDstPort());
-        out.writeByte(0X0D0A);
-        ctx.pipeline().remove(this);
+        switch (state) {
+            case INIT:
+                log.debug("trojan协议初次握手");
+                String password = Sha256Util.encryptThisString(msg.getPassword());
+                TrojanRequest trojanRequest = msg.getTrojanRequest();
+                out.writeCharSequence(password, StandardCharsets.UTF_8);
+                out.writeByte(0X0D0A);
+                out.writeByte(trojanRequest.getCmd());
+                out.writeByte(trojanRequest.getAtyp());
+                encodeAddress(trojanRequest.getAtyp(), out, trojanRequest.getDstAddr());
+                out.writeShort(trojanRequest.getDstPort());
+                out.writeByte(0X0D0A);
+                out.writeBytes(msg.getPayload());
+                state = State.SUCCESS;
+                break;
+            case SUCCESS:
+                log.debug("转发trojan数据");
+                out.writeBytes(msg.getPayload());
+                break;
+            default:
+                log.debug("未知的状态数据");
+        }
+
     }
 
     /**
@@ -86,6 +108,7 @@ public class TrojanRequestEncoder extends MessageToByteEncoder<TrojanWrapperRequ
             out.writeByte(dstAddr.length());
             out.writeCharSequence(dstAddr, StandardCharsets.UTF_8);
         } else {
+            //TODO 暂时不支持ipV6
             throw new RuntimeException("无法支持的地址类型");
         }
     }
