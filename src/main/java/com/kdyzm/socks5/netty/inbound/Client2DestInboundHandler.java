@@ -20,6 +20,7 @@ public class Client2DestInboundHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        log.debug("转发客户端的请求到代理服务器");
         dstChannelFuture.channel().writeAndFlush(msg);
     }
 
