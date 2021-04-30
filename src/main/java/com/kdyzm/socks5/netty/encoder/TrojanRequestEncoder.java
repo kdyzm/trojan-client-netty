@@ -71,12 +71,14 @@ public class TrojanRequestEncoder extends MessageToByteEncoder<TrojanWrapperRequ
                 String password = Sha256Util.encryptThisString(msg.getPassword());
                 TrojanRequest trojanRequest = msg.getTrojanRequest();
                 out.writeCharSequence(password, StandardCharsets.UTF_8);
-                out.writeByte(0X0D0A);
+                out.writeByte(0X0D);
+                out.writeByte(0X0A);
                 out.writeByte(trojanRequest.getCmd());
                 out.writeByte(trojanRequest.getAtyp());
                 encodeAddress(trojanRequest.getAtyp(), out, trojanRequest.getDstAddr());
                 out.writeShort(trojanRequest.getDstPort());
-                out.writeByte(0X0D0A);
+                out.writeByte(0X0D);
+                out.writeByte(0X0A);
                 out.writeBytes((ByteBuf) msg.getPayload());
                 state = State.SUCCESS;
                 break;
