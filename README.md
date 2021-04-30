@@ -1,5 +1,7 @@
 # trojan-client-netty
 
+一直想用java写一个trojan客户端，但是似乎一直没人搞，连个借鉴都没有。。。研究了下trojan协议，仔细看下其实比socks5协议简单很多，这里使用socks5协议做本地服务器代理，使用（开关配置）trojan协议作为科学上网客户端，如果启用trojan，一定要确保有个远端trojan服务端。
+
 ## 一.项目运行
 
 项目启动方法：
