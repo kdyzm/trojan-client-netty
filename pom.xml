@@ -60,6 +60,7 @@
                 <filtering>true</filtering>
                 <includes>
                     <include>*.properties</include>
+                    <include>*.txt</include>
                 </includes>
                 <targetPath>${project.build.directory}</targetPath>
             </resource>
