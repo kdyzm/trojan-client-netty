@@ -45,5 +45,11 @@ mvn clean package
 
 在黑名单中的请求，如果是http请求，则会返回一个提示页面在黑名单中拒绝访问；如果是https请求或者其它任何协议的请求，直接拒绝连接。
 
+## 三、注意事项
+
+### 1.连接速度缓慢，有些网页打不开
+使用官方提供的v2rayN等工具速度很快，但是使用这个程序速度很慢甚至打不开一些网页，造成这个的原因在于
+Proxifier没设置好，一定要注意使用代理的dns设置，菜单：Profile->Name Resolution
+取消`Detect DNS settings automatically`选项，勾选`Resolve hostnames through proxy`，之后就好了
 
 
