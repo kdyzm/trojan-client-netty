@@ -1,6 +1,6 @@
-package com.kdyzm.socks5.netty.inbound;
+package com.kdyzm.trojan.client.netty.inbound;
 
-import com.kdyzm.socks5.netty.properties.ConfigProperties;
+import com.kdyzm.trojan.client.netty.properties.ConfigProperties;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.socksx.v5.*;

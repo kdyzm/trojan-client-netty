@@ -1,19 +1,14 @@
-package com.kdyzm.socks5.netty.inbound;
+package com.kdyzm.trojan.client.netty.inbound;
 
-import com.kdyzm.socks5.netty.decoder.TrojanResponseDecoder;
-import com.kdyzm.socks5.netty.encoder.TrojanRequestEncoder;
-import com.kdyzm.socks5.netty.models.TrojanRequest;
-import com.kdyzm.socks5.netty.models.TrojanWrapperRequest;
-import com.kdyzm.socks5.netty.properties.ConfigProperties;
+import com.kdyzm.trojan.client.netty.encoder.TrojanRequestEncoder;
+import com.kdyzm.trojan.client.netty.properties.ConfigProperties;
+import com.kdyzm.trojan.client.netty.util.SslUtil;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.socksx.v5.*;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.ReferenceCountUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -91,11 +86,10 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 }
             });
         } else {
-            SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build();
             bootstrap.handler(new ChannelInitializer<SocketChannel>() {
                 @Override
                 protected void initChannel(SocketChannel ch) throws Exception {
-                    ch.pipeline().addLast(sslContext.newHandler(ch.alloc()));
+                    ch.pipeline().addLast(SslUtil.getContext().newHandler(ch.alloc()));
                     ch.pipeline().addLast(new TrojanRequestEncoder());
                 }
             });

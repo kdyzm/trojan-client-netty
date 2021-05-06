@@ -1,10 +1,10 @@
-package com.kdyzm.socks5.netty.server;
+package com.kdyzm.trojan.client.netty.server;
 
-import com.kdyzm.socks5.netty.inbound.Socks5CommandRequestInboundHandler;
-import com.kdyzm.socks5.netty.inbound.Socks5InitialRequestInboundHandler;
-import com.kdyzm.socks5.netty.inbound.Socks5PasswordAuthRequestInboundHandler;
-import com.kdyzm.socks5.netty.properties.ConfigProperties;
-import com.kdyzm.socks5.netty.properties.ConfigUtil;
+import com.kdyzm.trojan.client.netty.inbound.Socks5CommandRequestInboundHandler;
+import com.kdyzm.trojan.client.netty.inbound.Socks5InitialRequestInboundHandler;
+import com.kdyzm.trojan.client.netty.inbound.Socks5PasswordAuthRequestInboundHandler;
+import com.kdyzm.trojan.client.netty.properties.ConfigProperties;
+import com.kdyzm.trojan.client.netty.properties.ConfigUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;

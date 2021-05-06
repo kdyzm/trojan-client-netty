@@ -1,4 +1,4 @@
-package com.kdyzm.socks5.netty.constants;
+package com.kdyzm.trojan.client.netty.constants;
 
 /**
  * @author kdyzm

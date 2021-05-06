@@ -1,4 +1,4 @@
-package com.kdyzm.socks5.netty.inbound;
+package com.kdyzm.trojan.client.netty.inbound;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;

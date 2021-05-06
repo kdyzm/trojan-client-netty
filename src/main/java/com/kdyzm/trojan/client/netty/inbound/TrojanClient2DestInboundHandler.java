@@ -1,14 +1,11 @@
-package com.kdyzm.socks5.netty.inbound;
+package com.kdyzm.trojan.client.netty.inbound;
 
-import com.kdyzm.socks5.netty.encoder.TrojanRequestEncoder;
-import com.kdyzm.socks5.netty.models.TrojanRequest;
-import com.kdyzm.socks5.netty.models.TrojanWrapperRequest;
-import io.netty.buffer.ByteBuf;
+import com.kdyzm.trojan.client.netty.models.TrojanRequest;
+import com.kdyzm.trojan.client.netty.models.TrojanWrapperRequest;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.socksx.v5.Socks5AddressType;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

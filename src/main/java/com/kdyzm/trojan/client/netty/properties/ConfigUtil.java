@@ -1,4 +1,4 @@
-package com.kdyzm.socks5.netty.properties;
+package com.kdyzm.trojan.client.netty.properties;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

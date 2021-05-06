@@ -1,4 +1,4 @@
-package com.kdyzm.socks5.netty.config;
+package com.kdyzm.trojan.client.netty.config;
 
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
  * @date 2021-04-24
  */
 @Configuration
-@ComponentScan(basePackages = {"com.kdyzm.socks5.netty"})
+@ComponentScan(basePackages = {"com.kdyzm.trojan.client.netty"})
 public class Config {
 
 }

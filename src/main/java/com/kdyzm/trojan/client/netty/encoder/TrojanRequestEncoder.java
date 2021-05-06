@@ -1,9 +1,9 @@
-package com.kdyzm.socks5.netty.encoder;
+package com.kdyzm.trojan.client.netty.encoder;
 
-import com.kdyzm.socks5.netty.constants.TrojanAddressType;
-import com.kdyzm.socks5.netty.models.TrojanRequest;
-import com.kdyzm.socks5.netty.models.TrojanWrapperRequest;
-import com.kdyzm.socks5.netty.util.Sha256Util;
+import com.kdyzm.trojan.client.netty.constants.TrojanAddressType;
+import com.kdyzm.trojan.client.netty.models.TrojanRequest;
+import com.kdyzm.trojan.client.netty.models.TrojanWrapperRequest;
+import com.kdyzm.trojan.client.netty.util.Sha256Util;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;

@@ -1,4 +1,4 @@
-package com.kdyzm.socks5.netty.models;
+package com.kdyzm.trojan.client.netty.models;
 
 import lombok.Data;
 

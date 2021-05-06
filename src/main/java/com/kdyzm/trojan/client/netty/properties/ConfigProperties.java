@@ -1,4 +1,4 @@
-package com.kdyzm.socks5.netty.properties;
+package com.kdyzm.trojan.client.netty.properties;
 
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
