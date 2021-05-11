@@ -3,7 +3,7 @@ package com.kdyzm.trojan.client.netty.encoder;
 import com.kdyzm.trojan.client.netty.constants.TrojanAddressType;
 import com.kdyzm.trojan.client.netty.models.TrojanRequest;
 import com.kdyzm.trojan.client.netty.models.TrojanWrapperRequest;
-import com.kdyzm.trojan.client.netty.util.Sha256Util;
+import com.kdyzm.trojan.client.netty.util.Sha224Util;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
@@ -68,7 +68,7 @@ public class TrojanRequestEncoder extends MessageToByteEncoder<TrojanWrapperRequ
         switch (state) {
             case INIT:
                 log.debug("trojan协议初次握手");
-                String password = Sha256Util.encryptThisString(msg.getPassword());
+                String password = Sha224Util.encryptThisString(msg.getPassword());
                 TrojanRequest trojanRequest = msg.getTrojanRequest();
                 out.writeCharSequence(password, StandardCharsets.UTF_8);
                 out.writeByte(0X0D);

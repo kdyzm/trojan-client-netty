@@ -11,7 +11,7 @@ import java.security.NoSuchAlgorithmException;
  * @date 2021/4/28
  */
 @Slf4j
-public class Sha256Util {
+public class Sha224Util {
 
     public static String encryptThisString(String input) {
         try {

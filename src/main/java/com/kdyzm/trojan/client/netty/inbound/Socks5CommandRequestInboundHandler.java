@@ -136,7 +136,6 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                                     future,
                                     msg.dstAddr(),
                                     msg.dstPort(),
-                                    ctx,
                                     socks5AddressType,
                                     configProperties.getTrojanPassword()
                             )
