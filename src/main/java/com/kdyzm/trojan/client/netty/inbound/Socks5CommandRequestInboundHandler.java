@@ -66,9 +66,6 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 directConnect(ctx, msg, socks5AddressType, bootstrap);
                 break;
             case GLOBAL:
-                log.info("代理连接目标服务器，ip={},port={}", msg.dstAddr(), msg.dstPort());
-                proxyConnect(ctx, msg, socks5AddressType, bootstrap);
-                break;
             case PAC:
                 if (pacMode.isProxy()) {
                     log.info("代理连接目标服务器，ip={},port={}", msg.dstAddr(), msg.dstPort());
@@ -158,9 +155,20 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 return blackList.get(black);
             }
         }
-        //默认直连
+        
+        //如果不在pac名单中，默认行为取决于代理模式
         PacModel defaultResult = new PacModel();
-        defaultResult.setProxyMode(PacModeEnum.DIRECT.mode());
+        ProxyModelEnum proxyModelEnum = ProxyModelEnum.get(configProperties.getProxyMode());
+        switch (proxyModelEnum) {
+            case PAC:
+                defaultResult.setProxyMode(PacModeEnum.DIRECT.mode());
+                break;
+            case GLOBAL:
+            default:
+                defaultResult.setProxyMode(PacModeEnum.PROXY.mode());
+                break;
+        }
+
         defaultResult.setDomainName(dstAddr);
         return defaultResult;
     }
