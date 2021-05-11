@@ -36,7 +36,7 @@ public class TrojanClient2DestInboundHandler extends ChannelInboundHandlerAdapte
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        log.debug("转发客户端的请求到代理服务器");
+        log.trace("转发客户端的请求到代理服务器");
         if (state == State.INIT) {
             dstChannelFuture.channel().writeAndFlush(getTrojanWrapperRequest(msg));
             state = State.SUCCESS;

@@ -1,9 +1,11 @@
 package com.kdyzm.trojan.client.netty.properties;
 
+import com.kdyzm.trojan.client.netty.models.PacModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.*;
 import java.util.*;
@@ -22,6 +24,8 @@ public class ConfigUtil {
 
     private Set<String> blackList = new HashSet<>();
 
+    private Map<String, PacModel> pacModelMap = new HashMap<>();
+    
     @Autowired
     public ConfigUtil(ConfigProperties configProperties) {
         this.configProperties = configProperties;
@@ -47,29 +51,30 @@ public class ConfigUtil {
             return users;
         }
     }
-
-    /**
-     * 从配置文件中读取用户名和密码配置
-     *
-     * @return list
-     */
-    public Set<String> getBlackList() throws IOException {
-        if (!CollectionUtils.isEmpty(blackList)) {
-            return blackList;
+    
+    public Map<String,PacModel> getPacModelMap() throws IOException {
+        if (!CollectionUtils.isEmpty(pacModelMap)) {
+            return pacModelMap;
         }
         synchronized (this) {
-            if (!CollectionUtils.isEmpty(blackList)) {
-                return blackList;
+            if (!CollectionUtils.isEmpty(pacModelMap)) {
+                return pacModelMap;
             }
-            String blacklistPath = configProperties.getBlacklistPath();
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(blacklistPath)));
+            String pacFilePath = configProperties.getPacFilePath();
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(pacFilePath)));
             String str;
             while ((str = bufferedReader.readLine()) != null) {
-                blackList.add(str.toLowerCase(Locale.ROOT));
+                String s = str.toLowerCase(Locale.ROOT).replaceAll("\\s*|\t", "");
+                if(StringUtils.isEmpty(s) || s.startsWith("#")){
+                    continue;
+                }
+                String[] split = s.split(":");
+                PacModel pacModel = new PacModel();
+                pacModel.setDomainName(split[0]);
+                pacModel.setProxyMode(Integer.parseInt(split[1]));
+                pacModelMap.put(split[0],pacModel);
             }
-            return blackList;
+            return pacModelMap;
         }
     }
-
-
 }

@@ -34,9 +34,15 @@ public class BlackListInboundHandler extends ChannelInboundHandlerAdapter {
         log.info("请求uri：{}", request.uri());
         if ("/favicon.ico".equalsIgnoreCase(request.uri())) {
             log.info("不处理 /favicon.ico 请求");
+            ctx.channel().close();
             return;
         }
-        URL resource = this.getClass().getClassLoader().getResource("./blacklist.html");
+        if(!("".equalsIgnoreCase(request.uri())||"/".equalsIgnoreCase(request.uri()))){
+            log.info("非主页请求，直接关闭channel");
+            ctx.channel().close();
+            return;
+        }
+        URL resource = this.getClass().getClassLoader().getResource("blacklist.html");
         assert resource != null;
         RandomAccessFile file = new RandomAccessFile(new File(resource.getFile()), "r");
         HttpResponse response = new DefaultHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);

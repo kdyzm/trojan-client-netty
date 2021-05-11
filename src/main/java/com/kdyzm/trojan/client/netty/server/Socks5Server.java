@@ -60,7 +60,7 @@ public class Socks5Server {
                             }
                             //处理connection请求
                             pipeline.addLast(new Socks5CommandRequestDecoder());
-                            pipeline.addLast(new Socks5CommandRequestInboundHandler(clientWorkGroup, configUtil.getBlackList(),configProperties));
+                            pipeline.addLast(new Socks5CommandRequestInboundHandler(clientWorkGroup, configUtil.getPacModelMap(),configProperties));
                         }
                     });
             ChannelFuture future = bootstrap.bind(configProperties.getServerPort()).sync();

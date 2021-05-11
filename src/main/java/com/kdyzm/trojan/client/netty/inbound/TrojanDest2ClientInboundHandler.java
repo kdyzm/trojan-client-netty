@@ -20,18 +20,18 @@ public class TrojanDest2ClientInboundHandler extends ChannelInboundHandlerAdapte
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        log.debug("开始写回客户端");
+        log.trace("开始写回客户端");
         clientChannelHandlerContext.writeAndFlush(msg);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.debug("代理服务器和目标服务器的连接已经断开，即将断开客户端和代理服务器的连接");
+        log.trace("代理服务器和目标服务器的连接已经断开，即将断开客户端和代理服务器的连接");
         clientChannelHandlerContext.channel().close();
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.debug("Dest2ClientInboundHandler exception", cause);
+        log.info("Dest2ClientInboundHandler exception", cause);
     }
 }
