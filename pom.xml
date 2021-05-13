@@ -73,6 +73,8 @@
                 <includes>
                     <include>*.properties</include>
                     <include>*.txt</include>
+                    <include>*.yaml</include>
+                    <include>*.yml</include>
                 </includes>
                 <targetPath>${project.build.directory}</targetPath>
             </resource>
