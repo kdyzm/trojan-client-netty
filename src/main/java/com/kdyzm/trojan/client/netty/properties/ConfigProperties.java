@@ -1,7 +1,9 @@
 package com.kdyzm.trojan.client.netty.properties;
 
+import com.kdyzm.trojan.client.netty.factory.YamlPropertySourceFactory;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Data
 @Component
-@PropertySource(value = {"file:config.properties"})
+@PropertySource(value = {"file:config.yml"},factory = YamlPropertySourceFactory.class)
 public class ConfigProperties {
 
     /**

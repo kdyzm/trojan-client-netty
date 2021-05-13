@@ -22,8 +22,6 @@ public class ConfigUtil {
 
     private ConfigProperties configProperties;
 
-    private Set<String> blackList = new HashSet<>();
-
     private Map<String, PacModel> pacModelMap = new HashMap<>();
     
     @Autowired
