@@ -18,11 +18,11 @@ mvn clean package
 
 |配置文件名|配置文件描述|
 |---|---|
-|config.properties|根配置文件|
+|config.yml|根配置文件|
 |users.properties|默认的授权用户文件|
 |pac.txt|默认的域名黑名单|
 
-### 1.config.properties
+### 1.config.yml
 
 |配置项|配置描述|
 |---|---|
