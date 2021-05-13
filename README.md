@@ -20,7 +20,7 @@ mvn clean package
 |---|---|
 |config.yml|根配置文件|
 |users.properties|默认的授权用户文件|
-|pac.txt|默认的域名黑名单|
+|pac.txt|默认的地址行为控制名单|
 
 ### 1.config.yml
 
