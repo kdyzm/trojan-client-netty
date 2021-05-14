@@ -1,6 +1,8 @@
 #设置端口号
 server:
-  port: 1081
+  port:
+    socks5: 10808
+    http: 10809
 
 #代理模式有 pac|global|direct三种
 proxy:

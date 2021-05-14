@@ -1,7 +1,7 @@
 package com.kdyzm.trojan.client.netty;
 
 import com.kdyzm.trojan.client.netty.config.Config;
-import com.kdyzm.trojan.client.netty.server.Socks5Server;
+import com.kdyzm.trojan.client.netty.server.NettyServer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -13,12 +13,13 @@ import org.springframework.context.annotation.AnnotationConfigApplicationContext
 public class Main {
 
     public static void main(String[] args) throws InterruptedException {
-        log.info("socks5 netty server is starting ......");
+        log.info("proxy netty server is starting ......");
         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
         ctx.register(Config.class);
         ctx.refresh();
 
-        Socks5Server server = ctx.getBean(Socks5Server.class);
+        NettyServer server = ctx.getBean(NettyServer.class);
         server.start();
+
     }
 }

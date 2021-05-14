@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Data
 @Component
-@PropertySource(value = {"file:config.yml"},factory = YamlPropertySourceFactory.class)
+@PropertySource(value = {"file:config.yml"}, factory = YamlPropertySourceFactory.class)
 public class ConfigProperties {
 
     /**
@@ -26,7 +26,7 @@ public class ConfigProperties {
      */
     @Value("${proxy.mode}")
     private String proxyMode;
-    
+
     /**
      * pac文件的路径
      */
@@ -42,8 +42,11 @@ public class ConfigProperties {
     /**
      * 服务绑定的端口号
      */
-    @Value("${server.port}")
-    private Integer serverPort;
+    @Value("${server.port.socks5}")
+    private Integer socks5Port;
+
+    @Value("${server.port.http}")
+    private Integer httpPort;
 
     /**
      * 认证文件路径
