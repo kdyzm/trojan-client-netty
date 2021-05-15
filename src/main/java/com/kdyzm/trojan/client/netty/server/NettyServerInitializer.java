@@ -66,7 +66,7 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
             //处理http协议
         } else {
             pipeline.addLast(new HttpServerCodec());
-            pipeline.addLast(new HttpProxyInboundHandler());
+            pipeline.addLast(new HttpProxyInboundHandler(configUtil.getPacModelMap(), configProperties, clientWorkGroup));
         }
     }
 }

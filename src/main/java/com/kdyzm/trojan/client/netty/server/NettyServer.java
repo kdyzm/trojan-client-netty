@@ -1,19 +1,13 @@
 package com.kdyzm.trojan.client.netty.server;
 
-import com.kdyzm.trojan.client.netty.inbound.Socks5CommandRequestInboundHandler;
-import com.kdyzm.trojan.client.netty.inbound.Socks5InitialRequestInboundHandler;
-import com.kdyzm.trojan.client.netty.inbound.Socks5PasswordAuthRequestInboundHandler;
 import com.kdyzm.trojan.client.netty.properties.ConfigProperties;
 import com.kdyzm.trojan.client.netty.properties.ConfigUtil;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.socksx.v5.Socks5CommandRequestDecoder;
-import io.netty.handler.codec.socksx.v5.Socks5InitialRequestDecoder;
-import io.netty.handler.codec.socksx.v5.Socks5PasswordAuthRequestDecoder;
-import io.netty.handler.codec.socksx.v5.Socks5ServerEncoder;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

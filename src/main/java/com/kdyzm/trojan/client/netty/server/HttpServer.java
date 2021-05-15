@@ -1,12 +1,15 @@
 package com.kdyzm.trojan.client.netty.server;
 
 import com.kdyzm.trojan.client.netty.inbound.http.HttpProxyInboundHandler;
+import com.kdyzm.trojan.client.netty.properties.ConfigProperties;
+import com.kdyzm.trojan.client.netty.properties.ConfigUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -15,12 +18,18 @@ import org.springframework.stereotype.Component;
  * @date 2021/5/14
  */
 @Component
+@AllArgsConstructor
 @Slf4j
 public class HttpServer {
 
+    private final ConfigUtil configUtil;
+
+    private final ConfigProperties configProperties;
+    
     public void start() {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workGroup = new NioEventLoopGroup();
+        EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workGroup)
@@ -33,7 +42,7 @@ public class HttpServer {
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
                             p.addLast("httpcode", new HttpServerCodec());
-                            p.addLast("httpservice", new HttpProxyInboundHandler());
+                            p.addLast("httpservice", new HttpProxyInboundHandler(configUtil.getPacModelMap(), configProperties,eventLoopGroup));
                         }
                     });
 
