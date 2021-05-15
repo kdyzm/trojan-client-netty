@@ -14,18 +14,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
+ * 已经整合进了NettyServer
+ *
  * @author kdyzm
  * @date 2021/5/14
+ * @see NettyServer
  */
 @Component
 @AllArgsConstructor
 @Slf4j
+@Deprecated
 public class HttpServer {
 
     private final ConfigUtil configUtil;
 
     private final ConfigProperties configProperties;
-    
+
     public void start() {
         EventLoopGroup bossGroup = new NioEventLoopGroup();
         EventLoopGroup workGroup = new NioEventLoopGroup();
@@ -42,7 +46,7 @@ public class HttpServer {
                         protected void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
                             p.addLast("httpcode", new HttpServerCodec());
-                            p.addLast("httpservice", new HttpProxyInboundHandler(configUtil.getPacModelMap(), configProperties,eventLoopGroup));
+                            p.addLast("httpservice", new HttpProxyInboundHandler(configUtil.getPacModelMap(), configProperties, eventLoopGroup));
                         }
                     });
 

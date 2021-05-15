@@ -76,6 +76,8 @@
                     <include>*.txt</include>
                     <include>*.yaml</include>
                     <include>*.yml</include>
+                    <include>*.html</include>
+                    <include>*.htm</include>
                 </includes>
                 <targetPath>${project.build.directory}</targetPath>
             </resource>

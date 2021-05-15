@@ -118,11 +118,9 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
         if (pacMode.isBlock()) {
             log.info("{} 地址在黑名单中，拒绝连接", host);
             //假装连接成功
-            FullHttpResponse resp = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
-            //向浏览器发送同意连接的响应，并在发送完成后移除httpcode和httpservice两个handler
-            ctx.writeAndFlush(resp);
             ctx.pipeline().addLast(new BlackListInboundHandler());
             ctx.pipeline().remove(HttpProxyInboundHandler.class);
+            ctx.pipeline().fireChannelRead(msg);
             return;
         }
 

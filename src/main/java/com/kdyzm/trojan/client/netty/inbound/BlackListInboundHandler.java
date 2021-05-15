@@ -37,14 +37,7 @@ public class BlackListInboundHandler extends ChannelInboundHandlerAdapter {
             ctx.channel().close();
             return;
         }
-        if(!("".equalsIgnoreCase(request.uri())||"/".equalsIgnoreCase(request.uri()))){
-            log.info("非主页请求，直接关闭channel");
-            ctx.channel().close();
-            return;
-        }
-        URL resource = this.getClass().getClassLoader().getResource("blacklist.html");
-        assert resource != null;
-        RandomAccessFile file = new RandomAccessFile(new File(resource.getFile()), "r");
+        RandomAccessFile file = new RandomAccessFile(new File("blacklist.html"), "r");
         HttpResponse response = new DefaultHttpResponse(request.protocolVersion(), HttpResponseStatus.OK);
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
         boolean keepAlive = HttpUtil.isKeepAlive(request);

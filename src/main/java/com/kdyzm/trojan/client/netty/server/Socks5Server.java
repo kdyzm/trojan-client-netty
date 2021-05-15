@@ -19,12 +19,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
+ * 已经整合进了NettyServer
+ *
  * @author kdyzm
  * @date 2021-04-24
+ * @see NettyServer
  */
 @Slf4j
 @Component
 @AllArgsConstructor
+@Deprecated
 public class Socks5Server {
 
     private final ConfigProperties configProperties;
