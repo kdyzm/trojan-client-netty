@@ -106,7 +106,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
         String headerHost = req.headers().get("Host");
         String host = "";
         //端口默认80
-        int port = 80;
+        int port = -1;
         //可能有请求是 host:port的情况，
         String[] split = headerHost.split(":");
         host = split[0];
@@ -126,16 +126,13 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
 
         switch (ProxyModelEnum.get(configProperties.getProxyMode())) {
             case DIRECT:
-                log.info("[direct] {}:{}", host, port);
                 directConnect(host, port, method, req);
                 break;
             case GLOBAL:
             case PAC:
                 if (pacMode.isProxy()) {
-                    log.info("[proxy] {}:{}", host, port);
                     proxyConnect(host, port, method, req);
                 } else {
-                    log.info("[direct] {}:{}", host, port);
                     directConnect(host, port, method, req);
                 }
                 break;
@@ -151,6 +148,10 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
         //如果是https的连接
 
         if (method.equals(HttpMethod.CONNECT)) {
+            if (port == -1) {
+                port = 443;
+            }
+            log.info("[proxy][connect] {}:{}", host, port);
             Bootstrap bootstrap = new Bootstrap();
             ChannelFuture future = bootstrap.group(eventExecutors)
                     .channel(NioSocketChannel.class)
@@ -164,6 +165,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                     })
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000)
                     .connect();
+            int finalPort = port;
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -184,7 +186,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                         ctx.pipeline().addLast(new TrojanClient2DestInboundHandler(
                                         future,
                                         host,
-                                        port,
+                                        finalPort,
                                         IpUtil.parseAddress(host),
                                         configProperties.getTrojanPassword()
                                 )
@@ -196,6 +198,10 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                 }
             });
         } else {
+            if (port == -1) {
+                port = 80;
+            }
+            log.info("[proxy][http] {}:{}", host, port);
             //如果是http连接，首先将接受的请求转换成原始字节数据
             EmbeddedChannel em = new EmbeddedChannel(new HttpRequestEncoder());
             em.writeOutbound(req);
@@ -214,6 +220,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                     })
                     .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 2000)
                     .connect();
+            int finalPort1 = port;
             future.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture channelFuture) throws Exception {
@@ -225,7 +232,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                     ctx.pipeline().addLast(new TrojanClient2DestInboundHandler(
                                     future,
                                     host,
-                                    port,
+                                    finalPort1,
                                     IpUtil.parseAddress(host),
                                     configProperties.getTrojanPassword()
                             )
@@ -238,10 +245,13 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
 
     private void directConnect(String host, int port, HttpMethod method, HttpRequest req) {
         //根据host和port创建连接到服务器的连接
-        Promise<Channel> promise = createPromise(host, port);
-
         //根据是http还是http的不同，为promise添加不同的监听器
         if (method.equals(HttpMethod.CONNECT)) {
+            if (port == -1) {
+                port = 443;
+            }
+            Promise<Channel> promise = createPromise(host, port);
+            log.info("[direct][connect] {}:{}", host, port);
             //如果是https的连接
             promise.addListener(new FutureListener<Channel>() {
                 @Override
@@ -263,6 +273,11 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                 }
             });
         } else {
+            if (port == -1) {
+                port = 80;
+            }
+            Promise<Channel> promise = createPromise(host, port);
+            log.info("[direct][http] {}:{}", host, port);
             //如果是http连接，首先将接受的请求转换成原始字节数据
             EmbeddedChannel em = new EmbeddedChannel(new HttpRequestEncoder());
             em.writeOutbound(req);
