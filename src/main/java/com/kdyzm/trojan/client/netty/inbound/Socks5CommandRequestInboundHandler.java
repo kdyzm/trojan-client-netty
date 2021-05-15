@@ -62,16 +62,13 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 .option(ChannelOption.TCP_NODELAY, true);
         switch (ProxyModelEnum.get(configProperties.getProxyMode())) {
             case DIRECT:
-                log.info("直连目标服务器，ip={},port={}", msg.dstAddr(), msg.dstPort());
                 directConnect(ctx, msg, socks5AddressType, bootstrap);
                 break;
             case GLOBAL:
             case PAC:
                 if (pacMode.isProxy()) {
-                    log.info("代理连接目标服务器，ip={},port={}", msg.dstAddr(), msg.dstPort());
                     proxyConnect(ctx, msg, socks5AddressType, bootstrap);
                 } else {
-                    log.info("直连目标服务器，ip={},port={}", msg.dstAddr(), msg.dstPort());
                     directConnect(ctx, msg, socks5AddressType, bootstrap);
                 }
                 break;
@@ -82,6 +79,7 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
     }
 
     private void directConnect(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg, Socks5AddressType socks5AddressType, Bootstrap bootstrap) {
+        log.info("[direct][socks5] {}:{}", msg.dstAddr(), msg.dstPort());
         ChannelFuture future;
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
@@ -113,6 +111,7 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
     }
 
     private void proxyConnect(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg, Socks5AddressType socks5AddressType, Bootstrap bootstrap) {
+        log.info("[proxy][socks5] {}:{}", msg.dstAddr(), msg.dstPort());
         ChannelFuture future;
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
@@ -155,7 +154,7 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 return blackList.get(black);
             }
         }
-        
+
         //如果不在pac名单中，默认行为取决于代理模式
         PacModel defaultResult = new PacModel();
         ProxyModelEnum proxyModelEnum = ProxyModelEnum.get(configProperties.getProxyMode());
