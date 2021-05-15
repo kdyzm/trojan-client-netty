@@ -1,6 +1,8 @@
 # trojan-client-netty
 
-一直想用java写一个trojan客户端，但是似乎一直没人搞，连个借鉴都没有。。。研究了下trojan协议，仔细看下其实比socks5协议简单很多，这里使用socks5协议做本地服务器代理，使用（开关配置）trojan协议作为科学上网客户端，如果启用trojan，一定要确保有个远端trojan服务端。
+一直想用java写一个trojan客户端，但是似乎一直没人搞，连个借鉴都没有。。。
+研究了下trojan协议，仔细看下其实比socks5协议简单很多，
+这里使用socks5或者http协议做本地服务器代理，使用trojan协议作为科学上网客户端，如果启用trojan，一定要确保有个远端trojan服务端。
 
 ## 一.项目运行
 
@@ -24,16 +26,37 @@ mvn clean package
 
 ### 1.config.yml
 
-|配置项|配置描述|
-|---|---|
-|server.port|服务启动的端口号|
-|proxy.mode|代理模式，global：全局代理模式；pac：pac代理模式；direct：直连模式|
-|socks5.authentication.enabel|true或者false，是否启用认证的开关|
-|socks5.authentication.path|当authentication配置项为true时生效，表示授权用户文件路径|
-|pacfile.path|pac文件所在路径|
-|trojan.server.host|trojan服务端域名|
-|trojan.server.port|trojan服务端tls端口号|
-|trojan.password|trojan密码，用于trojan协议握手|
+```yaml
+#设置端口号
+server:
+  port:
+    socks5: 10808
+    http: 10809
+
+#代理模式有 pac|global|direct三种
+proxy:
+  mode: global
+
+socks5:
+  authentication:
+    #true或者false，是否启用认证的开关
+    enabel: true
+    #socks5认证信息文件，当authentication配置项为true时生效，表示授权用户文件路径，存储着用户名:密码键值对
+    path: ./users.properties
+
+trojan:
+  #trojan密码，用于trojan协议握手
+  password: 密码
+  server:
+    #trojan服务端域名
+    host: 服务器域名
+    #trojan服务端tls端口号
+    port: 443
+
+#pac文件路径，0：直连；-1：拒绝连接；1：代理连接
+pacfile:
+  path: ./pac.txt
+```
 
 ### 2.users.properties
 
@@ -41,8 +64,7 @@ mvn clean package
 
 ### 3.pac.txt
 
-该文件是pac文件，里面均为`域名:1|0|-1`格式的记录,1表示使用代理连接，0表示直连，1表示拒绝连接。
-例如`baidu.com:-1`表示不允许连接baidu.com域名。
+该文件是pac文件，里面均为`域名:1|0|-1`格式的记录,1表示使用代理连接，0表示直连，1表示拒绝连接。 例如`baidu.com:-1`表示不允许连接baidu.com域名。
 
 请求地址在pac名单中的按照名单中指定的值确定行为，如果请求的地址不在该名单中，默认行为取决于代理模式
 
@@ -54,13 +76,11 @@ mvn clean package
 
 在黑名单中的请求，如果是http请求，则会返回一个提示页面在黑名单中拒绝访问；如果是https请求或者其它任何协议的请求，直接拒绝连接。
 
-
-
 ## 三、注意事项
 
 ### 1.连接速度缓慢，有些网页打不开
-使用官方提供的v2rayN等工具速度很快，但是使用这个程序速度很慢甚至打不开一些网页，造成这个的原因在于
-Proxifier没设置好，一定要注意使用代理的dns设置，菜单：Profile->Name Resolution
+
+使用官方提供的v2rayN等工具速度很快，但是使用这个程序速度很慢甚至打不开一些网页，造成这个的原因在于 Proxifier没设置好，一定要注意使用代理的dns设置，菜单：Profile->Name Resolution
 取消`Detect DNS settings automatically`选项，勾选`Resolve hostnames through proxy`，之后就好了
 
 
