@@ -173,12 +173,17 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                         //首先向浏览器发送一个200的响应，证明已经连接成功了，可以发送数据了
                         FullHttpResponse resp = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
                         //向浏览器发送同意连接的响应，并在发送完成后移除httpcode和httpservice两个handler
-                        ctx.writeAndFlush(resp);
+                        ctx.writeAndFlush(resp).addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(ChannelFuture future) throws Exception {
+                                ChannelPipeline p = ctx.pipeline();
+                                p.remove(HttpServerCodec.class);
+                                p.remove(HttpProxyInboundHandler.class);
+                            }
+                        });
                         future.channel().pipeline().addLast(new TrojanDest2ClientInboundHandler(ctx));
                         //添加客户端转发请求到服务端的Handler
                         ChannelPipeline p = ctx.pipeline();
-                        p.remove(HttpServerCodec.class);
-                        p.remove(HttpProxyInboundHandler.class);
                         p.addLast(new TrojanClient2DestInboundHandler(
                                         future,
                                         host,
@@ -255,10 +260,15 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                     //首先向浏览器发送一个200的响应，证明已经连接成功了，可以发送数据了
                     FullHttpResponse resp = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, new HttpResponseStatus(200, "OK"));
                     //向浏览器发送同意连接的响应，并在发送完成后移除httpcode和httpservice两个handler
-                    ctx.writeAndFlush(resp);
+                    ctx.writeAndFlush(resp).addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(ChannelFuture future) throws Exception {
+                            ChannelPipeline p = ctx.pipeline();
+                            p.remove(HttpServerCodec.class);
+                            p.remove(HttpProxyInboundHandler.class);
+                        }
+                    });;
                     ChannelPipeline p = ctx.pipeline();
-                    p.remove(HttpServerCodec.class);
-                    p.remove(HttpProxyInboundHandler.class);
                     //将客户端channel添加到转换数据的channel，（这个NoneHandler是自己写的）
                     p.addLast(new ForwardInboundHandler(channelFuture.getNow()));
                 }
