@@ -4,6 +4,12 @@
 研究了下trojan协议，仔细看下其实比socks5协议简单很多，
 这里使用socks5或者http协议做本地服务器代理，使用trojan协议作为科学上网客户端，如果启用trojan，一定要确保有个远端trojan服务端。
 
+相关设计详见我的博客文章：
+
+[使用netty实现socks5协议](http://blog.kdyzm.cn/post/70)
+
+[使用netty实现socks5+trojan混合协议trojan客户端](http://blog.kdyzm.cn/post/71)
+
 |版本号|说明|
 |---|---|
 |v1.0|实现Socks5无认证服务端|
