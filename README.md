@@ -100,6 +100,6 @@ pacfile:
 取消`Detect DNS settings automatically`选项，勾选`Resolve hostnames through proxy`，之后就好了
 
 
-补充本项目的作用图例：
+### 2.补充本项目的作用图例：
 
 ![image-20250123171816933](https://blog.kdyzm.cn/blog/public/2025/01/23/143e44b6-e023-4dab-b516-1ee1ccc5fb9e.png)
