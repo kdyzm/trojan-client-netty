@@ -1,8 +1,5 @@
 package com.kdyzm.trojan.client.netty.encoder;
 
-import com.kdyzm.trojan.client.netty.constants.TrojanAddressType;
-import com.kdyzm.trojan.client.netty.models.TrojanRequest;
-import com.kdyzm.trojan.client.netty.models.TrojanWrapperRequest;
 import com.kdyzm.trojan.client.netty.util.Sha224Util;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,105 +11,77 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 /**
- * @author kdyzm
- * @date 2021/4/28
+ * trojan 握手帧编码器。
+ * 目标元数据在构造时注入（Phase 2 收敛：不再依赖首帧 wrapper 消息携带）。
+ * 状态机 INIT/SUCCESS 保证只在第一个消息编码时输出握手头（含首段 payload），
+ * 后续消息原样透传。握手头触发时机 = 出站连接上第一个业务数据（与历史行为一致）。
+ *
+ * <pre>
+ * +-----------------------+---------+----------------+---------+----------+
+ * | hex(SHA224(password)) |  CRLF   | Trojan Request |  CRLF   | Payload  |
+ * +-----------------------+---------+----------------+---------+----------+
+ * Trojan Request: CMD(0x01) ATYP DST.ADDR DST.PORT(big-endian)
+ * </pre>
  */
 @Slf4j
-public class TrojanRequestEncoder extends MessageToByteEncoder<TrojanWrapperRequest> {
+public class TrojanRequestEncoder extends MessageToByteEncoder<ByteBuf> {
 
-    /**
-     * TLS连接成功后，尝试进行trojan协议握手
-     * <pre>
-     * +-----------------------+---------+----------------+---------+----------+
-     * | hex(SHA224(password)) |  CRLF   | Trojan Request |  CRLF   | Payload  |
-     * +-----------------------+---------+----------------+---------+----------+
-     * |          56           | X'0D0A' |    Variable    | X'0D0A' | Variable |
-     * +-----------------------+---------+----------------+---------+----------+
-     * where Trojan Request is a SOCKS5-like request:
-     *
-     * +-----+------+----------+----------+
-     * | CMD | ATYP | DST.ADDR | DST.PORT |
-     * +-----+------+----------+----------+
-     * |  1  |  1   | Variable |    2     |
-     * +-----+------+----------+----------+
-     *
-     * where:
-     *
-     *     o  CMD
-     *         o  CONNECT X'01'
-     *         o  UDP ASSOCIATE X'03'
-     *     o  ATYP address type of following address
-     *         o  IP V4 address: X'01'
-     *         o  DOMAINNAME: X'03'
-     *         o  IP V6 address: X'04'
-     *     o  DST.ADDR desired destination address
-     *     o  DST.PORT desired destination port in network octet order
-     * </pre>
-     */
+    private final String password;
+
+    private final int atyp;
+
+    private final String dstAddr;
+
+    private final int dstPort;
 
     enum State {
-        /**
-         *
-         */
         INIT,
         SUCCESS
     }
 
     private State state;
 
-    public TrojanRequestEncoder() {
+    public TrojanRequestEncoder(String password, int atyp, String dstAddr, int dstPort) {
+        this.password = password;
+        this.atyp = atyp;
+        this.dstAddr = dstAddr;
+        this.dstPort = dstPort;
         this.state = State.INIT;
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, TrojanWrapperRequest msg, ByteBuf out) throws Exception {
-        log.debug("请求代理服务器发起trojan协议握手");
-        switch (state) {
-            case INIT:
-                log.debug("trojan协议初次握手");
-                String password = Sha224Util.encryptThisString(msg.getPassword());
-                TrojanRequest trojanRequest = msg.getTrojanRequest();
-                out.writeCharSequence(password, StandardCharsets.UTF_8);
-                out.writeByte(0X0D);
-                out.writeByte(0X0A);
-                out.writeByte(trojanRequest.getCmd());
-                out.writeByte(trojanRequest.getAtyp());
-                encodeAddress(trojanRequest.getAtyp(), out, trojanRequest.getDstAddr());
-                out.writeShort(trojanRequest.getDstPort());
-                out.writeByte(0X0D);
-                out.writeByte(0X0A);
-                out.writeBytes((ByteBuf) msg.getPayload());
-                state = State.SUCCESS;
-                break;
-            case SUCCESS:
-                log.debug("转发trojan数据");
-                out.writeBytes((ByteBuf) msg.getPayload());
-                break;
-            default:
-                log.debug("未知的状态数据");
+    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
+        if (state == State.INIT) {
+            log.debug("trojan协议初次握手");
+            String hash = Sha224Util.encryptThisString(password);
+            out.writeCharSequence(hash, StandardCharsets.UTF_8);
+            out.writeByte(0X0D);
+            out.writeByte(0X0A);
+            out.writeByte(0X01); // CMD = CONNECT
+            out.writeByte(atyp);
+            encodeAddress(atyp, out, dstAddr);
+            out.writeShort(dstPort);
+            out.writeByte(0X0D);
+            out.writeByte(0X0A);
+            state = State.SUCCESS;
         }
-
+        //SUCCESS 与 INIT 均需写 payload（INIT 时 payload 紧跟握手头）
+        out.writeBytes(msg, msg.readerIndex(), msg.readableBytes());
     }
 
     /**
-     * 加密密码
-     *
-     * @param addressType
-     * @param out
-     * @param dstAddr
+     * 编码目标地址：ATYP=1 IPv4 四字节、ATYP=3 域名（长度前缀）、ATYP=4 IPv6 十六字节
      */
     private void encodeAddress(int addressType, ByteBuf out, String dstAddr) {
-        if (addressType == TrojanAddressType.IPV4) {
+        if (addressType == 0X01) {
             String[] split = dstAddr.split("\\.");
             for (String item : split) {
-                int b = Integer.parseInt(item);
-                out.writeByte(b);
+                out.writeByte(Integer.parseInt(item));
             }
-        } else if (addressType == TrojanAddressType.DOMAIN) {
+        } else if (addressType == 0X03) {
             out.writeByte(dstAddr.length());
             out.writeCharSequence(dstAddr, StandardCharsets.UTF_8);
-        } else if (addressType == TrojanAddressType.IPV6) {
-            //IPv6 地址，写入 16 字节
+        } else if (addressType == 0X04) {
             try {
                 byte[] bytes = InetAddress.getByName(dstAddr).getAddress();
                 if (bytes.length != 16) {

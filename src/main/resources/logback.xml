@@ -13,7 +13,7 @@
 
     <!-- 定义日志文件 输出位置 -->
     <property name="log.home_dir" value="./logs"/>
-    <property name="log.app_name" value="http-demo"/>
+    <property name="log.app_name" value="trojan-client"/>
     <!-- 日志最大的历史 30天 -->
     <property name="log.maxHistory" value="30"/>
     <property name="log.level" value="info"/>
@@ -109,22 +109,11 @@
         </encoder>
     </appender>
 
-    <!--    <appender name="ACCESS" class="com.kdyzm.validation.spring.bootdemo.AccessLogInterceptor">
-            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-                <fileNamePattern>${log.home_dir}/access/%d{yyyy-MM-dd}/${log.app_name}-%i.log</fileNamePattern>
-                <maxHistory>${log.maxHistory}</maxHistory>
-                <MaxFileSize>${log.maxSize}</MaxFileSize>
-            </rollingPolicy>
-            <encoder>
-                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%-5level] %logger - %msg%n</pattern>
-            </encoder>
-        </appender>-->
-
     <!--org.springframework.web包下的类的日志输出-->
     <logger name="org.springframework.web" additivity="false" level="INFO">
         <appender-ref ref="INFO"/>
     </logger>
-    <!--com.zgd包下的类的日志输出-->
+    <!--com.kdyzm包下的类的日志输出-->
     <logger name="com.kdyzm" additivity="false" level="info" >
         <appender-ref ref="app" />
         <appender-ref ref="ERROR" />
