@@ -22,15 +22,11 @@
             <version>1.28</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/io.netty/netty-all -->
+        <!-- 统一 netty 到 4.1 分支最新维护版；netty-all 已含 codec，移除独立的 netty-codec 4.1.36 条目避免双版本生效（含历史 CVE） -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.63.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-codec</artifactId>
-            <version>4.1.36.Final</version>
+            <version>4.1.137.Final</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-api -->
         <dependency>

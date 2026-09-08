@@ -40,6 +40,13 @@ public class ConfigProperties {
     private boolean authentication;
 
     /**
+     * http 代理端口的认证开关（Proxy-Authorization Basic，凭据复用 users.properties）。
+     * 默认关闭；如需开启请在 config.yml 添加 http.authentication.enabel: true（拼写沿用 socks5 的既有写法）
+     */
+    @Value("${http.authentication.enabel:false}")
+    private boolean httpAuthentication;
+
+    /**
      * 服务绑定的端口号
      */
     @Value("${server.port.socks5}")

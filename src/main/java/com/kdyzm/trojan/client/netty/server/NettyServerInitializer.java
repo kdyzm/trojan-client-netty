@@ -4,6 +4,7 @@ import com.kdyzm.trojan.client.netty.inbound.RelayHandler;
 import com.kdyzm.trojan.client.netty.inbound.Socks5CommandRequestInboundHandler;
 import com.kdyzm.trojan.client.netty.inbound.Socks5InitialRequestInboundHandler;
 import com.kdyzm.trojan.client.netty.inbound.Socks5PasswordAuthRequestInboundHandler;
+import com.kdyzm.trojan.client.netty.inbound.http.HttpAuthInboundHandler;
 import com.kdyzm.trojan.client.netty.inbound.http.HttpProxyInboundHandler;
 import com.kdyzm.trojan.client.netty.properties.ConfigProperties;
 import com.kdyzm.trojan.client.netty.properties.ConfigUtil;
@@ -79,6 +80,10 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
             //下行下载流在客户端腿上是写，只统计读会误回收活跃连接
             pipeline.addLast(new IdleStateHandler(0, 0, 300));
             pipeline.addLast(new HttpServerCodec());
+            //http 代理认证（可选）：Proxy-Authorization Basic，凭据复用 users.properties
+            if (configProperties.isHttpAuthentication()) {
+                pipeline.addLast(new HttpAuthInboundHandler(configUtil.getUsers()));
+            }
             ProxyRouter proxyRouter = new ProxyRouter(configUtil.getPacModelMap(), configProperties.getProxyMode());
             RelayHandler relayHandler = new RelayHandler();
             pipeline.addLast(new HttpProxyInboundHandler(proxyRouter, configProperties, clientWorkGroup, relayHandler));

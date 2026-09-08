@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
  * 两种装配方式：
  * - 客户端侧：先无参入链，连接建立成功后由客户端 eventLoop 调用 activate(peer)
  * - 出站侧：构造时直接传入对端 channel（客户端 channel 引用）
- * 行为：数据转发对端；任一侧断开级联关闭对端；读空闲事件双向回收；
+ * 行为：数据转发对端；任一侧断开级联关闭对端；空闲事件（读写双向静默）双向回收；
  * 未激活（peer 为空）期间收到的消息直接释放。
  *
  * @author kdyzm
@@ -59,7 +59,7 @@ public class RelayHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
-            log.info("读空闲超时，回收空闲连接");
+            log.info("空闲超时，回收空闲连接");
             if (peer != null && peer.isActive()) {
                 SocksServerUtils.closeOnFlush(peer);
             }
