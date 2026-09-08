@@ -12,7 +12,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.socksx.v5.*;
-import io.netty.util.ReferenceCountUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,13 +32,20 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
 
     private ConfigProperties configProperties;
 
+    /**
+     * 出站连接超时时间，与 http 代理路径保持一致
+     */
+    private static final int CONNECT_TIMEOUT_MILLIS = 2000;
+
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg) throws Exception {
         Socks5AddressType socks5AddressType = msg.dstAddrType();
         if (!msg.type().equals(Socks5CommandType.CONNECT)) {
-            log.debug("receive commandRequest type={}", msg.type());
-            ReferenceCountUtil.retain(msg);
-            ctx.fireChannelRead(msg);
+            //仅支持 CONNECT；UDP ASSOCIATE / BIND 等命令无法处理，明确拒绝并关闭连接
+            log.warn("不支持的 SOCKS5 命令类型: {}", msg.type());
+            DefaultSocks5CommandResponse response = new DefaultSocks5CommandResponse(
+                    Socks5CommandStatus.COMMAND_UNSUPPORTED, msg.dstAddrType());
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
             return;
         }
         //检查黑名单
@@ -59,7 +65,8 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
         Bootstrap bootstrap = new Bootstrap();
         bootstrap = bootstrap.group(eventExecutors)
                 .channel(NioSocketChannel.class)
-                .option(ChannelOption.TCP_NODELAY, true);
+                .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS);
         switch (ProxyModelEnum.get(configProperties.getProxyMode())) {
             case DIRECT:
                 directConnect(ctx, msg, socks5AddressType, bootstrap);

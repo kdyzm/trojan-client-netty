@@ -193,7 +193,9 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                                 )
                         );
                     } else {
-                        ctx.close();
+                        log.error("代理服务器连接失败,host={},port={}", configProperties.getTrojanServerHost(),
+                                configProperties.getTrojanServerPort());
+                        ctx.writeAndFlush(badGatewayResponse(HttpVersion.HTTP_1_1)).addListener(ChannelFutureListener.CLOSE);
                         channelFuture.cancel(true);
                     }
                 }
@@ -301,6 +303,17 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
 
 
     /**
+     * 构造 502 Bad Gateway 响应：代理无法连接上游时返回给浏览器，替代直接断开
+     *
+     * @param version 与浏览器请求一致的 HTTP 版本
+     */
+    static FullHttpResponse badGatewayResponse(HttpVersion version) {
+        DefaultFullHttpResponse resp = new DefaultFullHttpResponse(version, HttpResponseStatus.BAD_GATEWAY);
+        resp.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
+        return resp;
+    }
+
+    /**
      * 根据host和端口，创建一个连接web的连接
      */
     private Promise<Channel> createPromise(String host, int port) {
@@ -318,7 +331,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                         if (channelFuture.isSuccess()) {
                             promise.setSuccess(channelFuture.channel());
                         } else {
-                            ctx.close();
+                            ctx.writeAndFlush(badGatewayResponse(HttpVersion.HTTP_1_1)).addListener(ChannelFutureListener.CLOSE);
                             channelFuture.cancel(true);
                         }
                     }

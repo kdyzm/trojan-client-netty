@@ -9,6 +9,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -109,9 +111,19 @@ public class TrojanRequestEncoder extends MessageToByteEncoder<TrojanWrapperRequ
         } else if (addressType == TrojanAddressType.DOMAIN) {
             out.writeByte(dstAddr.length());
             out.writeCharSequence(dstAddr, StandardCharsets.UTF_8);
+        } else if (addressType == TrojanAddressType.IPV6) {
+            //IPv6 地址，写入 16 字节
+            try {
+                byte[] bytes = InetAddress.getByName(dstAddr).getAddress();
+                if (bytes.length != 16) {
+                    throw new IllegalArgumentException("非法的 IPv6 地址: " + dstAddr);
+                }
+                out.writeBytes(bytes);
+            } catch (UnknownHostException e) {
+                throw new IllegalArgumentException("非法的 IPv6 地址: " + dstAddr, e);
+            }
         } else {
-            //TODO 暂时不支持ipV6
-            throw new RuntimeException("无法支持的地址类型");
+            throw new IllegalArgumentException("无法支持的地址类型: " + addressType);
         }
     }
 }

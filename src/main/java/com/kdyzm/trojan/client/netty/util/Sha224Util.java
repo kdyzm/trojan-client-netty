@@ -19,7 +19,9 @@ public class Sha224Util {
             byte[] messageDigest = md.digest(input.getBytes());
             BigInteger no = new BigInteger(1, messageDigest);
             StringBuilder hashtext = new StringBuilder(no.toString(16));
-            while (hashtext.length() < 32) {
+            // SHA-224 摘要固定 28 字节 = 56 位十六进制；BigInteger.toString(16) 会去掉首字节的前导 0，
+            // 补足到 56 位以符合 trojan 协议握手头的 56 位小写 hex 约定
+            while (hashtext.length() < 56) {
                 hashtext.insert(0, "0");
             }
             return hashtext.toString();
