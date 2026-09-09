@@ -78,4 +78,22 @@ public class ConfigProperties {
      */
     @Value("${trojan.password}")
     private String trojanPassword;
+
+    /**
+     * 监控端口监听开关（默认开启；config.yml 可配 monitor.enabled: false 关闭）
+     */
+    @Value("${monitor.enabled:true}")
+    private boolean monitorEnabled;
+
+    /**
+     * 监控端口绑定地址（默认 127.0.0.1 仅本机；目标地址列表属敏感信息，如需局域网访问改为 0.0.0.0）
+     */
+    @Value("${monitor.host:127.0.0.1}")
+    private String monitorHost;
+
+    /**
+     * 监控端口号（默认 10810；冲突时仅告警停用监控，不影响代理主服务）
+     */
+    @Value("${monitor.port:10810}")
+    private int monitorPort;
 }

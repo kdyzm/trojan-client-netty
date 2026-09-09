@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>trojan-client 连接监控</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: #f5f6f8; margin: 0; color: #1c2733; }
+  header { background: linear-gradient(135deg, #14213d, #1f3a68); color: #fff;
+           padding: 16px 24px; display: flex; align-items: baseline; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header span { font-size: 13px; opacity: .8; }
+  main { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px;
+          overflow: hidden; box-shadow: 0 1px 6px rgba(16,24,40,.08); font-size: 13px; }
+  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e8ebf0; white-space: nowrap; }
+  th { background: #f0f3f8; color: #40536a; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px; color: #fff; }
+  .tag-proxy { background: #2f6fed; } .tag-direct { background: #00a368; } .tag-block { background: #d63031; }
+  .empty { text-align: center; color: #5c6b7a; padding: 40px 0; }
+  .up { color: #2f6fed; } .down { color: #00a368; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: #2f6fed; }
+  th.sorted { color: #2f6fed; font-weight: 700; }
+  th.sorted.asc::after { content: " ▲"; }
+  th.sorted.desc::after { content: " ▼"; }
+</style>
+</head>
+<body>
+<header><h1>trojan-client 连接监控</h1><span id="status">连接中…</span></header>
+<main>
+  <table>
+    <thead>
+      <tr>
+        <th class="sortable" data-key="src">来源</th>
+        <th class="sortable" data-key="protocol">协议</th>
+        <th class="sortable" data-key="mode">模式</th>
+        <th class="sortable" data-key="target">目标</th>
+        <th class="sortable" data-key="duration">时长</th>
+        <th class="sortable" data-key="upRate">↑ 速率</th>
+        <th class="sortable" data-key="downRate">↓ 速率</th>
+        <th class="sortable" data-key="upTotal">累计 ↑</th>
+        <th class="sortable" data-key="downTotal">累计 ↓</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div id="empty" class="empty" style="display:none">当前没有活跃代理连接</div>
+</main>
+<script>
+"use strict";
+let last = new Map();       // 上轮快照：id -> { t, up, down }
+let lastRows = null;        // 最近构建的 row 数组（含原始排序键与显示文本）
+let sortKey = null;         // 当前排序列（data-key），null = 不排序
+let sortDir = 1;            // 1 升序 / -1 降序
+let intervalHandle = null;
+
+function fmtBytes(n) {
+  const units = ["B", "KB", "MB", "GB"];
+  let v = n, u = 0;
+  while (v >= 1024 && u < units.length - 1) { v /= 1024; u++; }
+  return v.toFixed(v >= 100 || u === 0 ? 0 : 1) + " " + units[u];
+}
+function fmtRate(bps) { return bps > 0 ? fmtBytes(bps) + "/s" : "—"; }
+function fmtDuration(ms) {
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + "s";
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + "m" + (s % 60) + "s";
+  const h = Math.floor(m / 60);
+  return h + "h" + (m % 60) + "m";
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function modeTag(mode) {
+  const label = { PROXY: "proxy", DIRECT: "direct", BLOCK: "block" }[mode] || mode;
+  return '<span class="tag tag-' + label.toLowerCase() + '">' + esc(label) + "</span>";
+}
+
+/** 数值排序键列（其余列按字符串 localeCompare） */
+function isNumericKey(key) {
+  return key === "duration" || key === "upRate" || key === "downRate"
+      || key === "upTotal" || key === "downTotal";
+}
+
+/**
+ * 由接口数据构建 row 数组：排序键用每轮派生的原始值（时长 = now-startTime、
+ * 速率 = 两轮差分 bps、累计 = 字节数），显示文本单独保存——格式化在排序之后，
+ * 避免"按格式化字符串排数字列"错误。
+ */
+function buildRows(list, now) {
+  const prev = last;
+  last = new Map();
+  const rows = [];
+  for (const row of list) {
+    const old = prev.get(row.id);
+    const dt = old ? now - old.t : 1000;
+    const upRate = old && row.upBytes > old.up ? (row.upBytes - old.up) * 1000 / dt : 0;
+    const downRate = old && row.downBytes > old.down ? (row.downBytes - old.down) * 1000 / dt : 0;
+    last.set(row.id, { t: now, up: row.upBytes, down: row.downBytes });
+    const duration = now - row.startTimeMillis;
+    const hostPort = row.host + ":" + row.port;
+    rows.push({
+      //原始排序键
+      src: row.src, protocol: row.protocol, mode: row.mode,
+      target: hostPort, duration: duration,
+      upRate: upRate, downRate: downRate, upTotal: row.upBytes, downTotal: row.downBytes,
+      //显示文本（已格式化/已转义）
+      srcText: esc(row.src),
+      protocolText: esc(row.protocol),
+      modeText: modeTag(row.mode),
+      targetText: esc(hostPort),
+      durationText: fmtDuration(duration),
+      upRateText: '<span class="up">' + fmtRate(upRate) + "</span>",
+      downRateText: '<span class="down">' + fmtRate(downRate) + "</span>",
+      upTotalText: fmtBytes(row.upBytes),
+      downTotalText: fmtBytes(row.downBytes)
+    });
+  }
+  return rows;
+}
+
+/** 原地排序（按当前 sortKey/sortDir）；未选择排序列时原序返回 */
+function sortRows(rows) {
+  if (!sortKey || rows.length < 2) {
+    return rows;
+  }
+  const key = sortKey;
+  const dir = sortDir;
+  const numeric = isNumericKey(key);
+  rows.sort(function (a, b) {
+    const va = a[key], vb = b[key];
+    const c = numeric ? va - vb : String(va).localeCompare(String(vb));
+    return c * dir;
+  });
+  return rows;
+}
+
+/** 以 lastRows 渲染表格 DOM（排序已完成） */
+function renderRows() {
+  const tbody = document.getElementById("rows");
+  tbody.innerHTML = "";
+  const cells = ["srcText", "protocolText", "modeText", "targetText",
+                 "durationText", "upRateText", "downRateText", "upTotalText", "downTotalText"];
+  for (const r of lastRows) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = cells.map(c => "<td>" + r[c] + "</td>").join("");
+    tbody.appendChild(tr);
+  }
+  document.getElementById("empty").style.display = lastRows.length ? "none" : "block";
+  document.getElementById("status").textContent =
+      lastRows.length + " 个活跃连接 · " + new Date().toLocaleTimeString();
+}
+
+/** 设置排序列与方向并即时重排（表头点击触发） */
+function setSort(key) {
+  if (sortKey === key) {
+    sortDir = -sortDir;           //同列再点：切换升/降
+  } else {
+    sortKey = key;
+    sortDir = 1;                  //新列：升序开始
+  }
+  document.querySelectorAll("th.sortable").forEach(function (th) {
+    const active = th.dataset.key === key;
+    th.classList.toggle("sorted", active);
+    th.classList.toggle("asc", active && sortDir === 1);
+    th.classList.toggle("desc", active && sortDir === -1);
+  });
+  if (lastRows) {
+    sortRows(lastRows);
+    renderRows();
+  }
+}
+
+/** 页面加载时绑定表头点击 */
+document.querySelectorAll("th.sortable").forEach(function (th) {
+  th.addEventListener("click", function () { setSort(th.dataset.key); });
+});
+
+async function poll() {
+  try {
+    const resp = await fetch("/api/connections");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const list = await resp.json();
+    lastRows = buildRows(list, Date.now());
+    sortRows(lastRows);           //每轮按用户所选规则重排
+    renderRows();
+  } catch (e) {
+    document.getElementById("status").textContent = "获取失败: " + e.message;
+  }
+}
+function start() { if (!intervalHandle) { poll(); intervalHandle = setInterval(poll, 1000); } }
+function stop()  { if (intervalHandle) { clearInterval(intervalHandle); intervalHandle = null; } }
+document.addEventListener("visibilitychange", () => document.hidden ? stop() : start());
+start();
+</script>
+</body>
+</html>

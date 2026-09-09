@@ -1,6 +1,8 @@
 package com.kdyzm.trojan.client.netty.inbound;
 
 import com.kdyzm.trojan.client.netty.encoder.TrojanRequestEncoder;
+import com.kdyzm.trojan.client.netty.monitor.ConnectionTrafficHandler;
+import com.kdyzm.trojan.client.netty.monitor.TrafficCounter;
 import com.kdyzm.trojan.client.netty.router.ProxyDecision;
 import com.kdyzm.trojan.client.netty.router.ProxyRouter;
 import com.kdyzm.trojan.client.netty.properties.ConfigProperties;
@@ -63,6 +65,11 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
             ctx.pipeline().remove(Socks5CommandRequestDecoder.class);
             //静态链的 relay 需随握手 handler 一并移除，否则黑名单拦截页的数据会被未激活的 relay 释放（Task 3 审查回归发现）
             ctx.pipeline().remove(RelayHandler.class);
+            //补全监控计数目标：黑名单拒绝也在监控页展示（模式=BLOCK，字节统计仅拦截页回放）
+            TrafficCounter counter = ctx.channel().attr(ConnectionTrafficHandler.COUNTER_KEY).get();
+            if (counter != null) {
+                counter.setTarget("socks5", ProxyDecision.BLOCK, msg.dstAddr(), msg.dstPort());
+            }
             return;
         }
         log.debug("准备连接目标服务器，ip={},port={}", msg.dstAddr(), msg.dstPort());
@@ -72,9 +79,9 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
                 .option(ChannelOption.TCP_NODELAY, true)
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS);
         if (decision == ProxyDecision.PROXY) {
-            proxyConnect(ctx, msg, socks5AddressType, bootstrap);
+            proxyConnect(ctx, msg, socks5AddressType, bootstrap, decision);
         } else {
-            directConnect(ctx, msg, socks5AddressType, bootstrap);
+            directConnect(ctx, msg, socks5AddressType, bootstrap, decision);
         }
     }
 
@@ -83,7 +90,8 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
      * 移除握手 decoder 与自身、激活 relay、回 SUCCESS——全程单线程，无 pipeline 竞态
      */
     private void onConnectSuccess(ChannelHandlerContext ctx, Channel outboundChannel,
-                                  Socks5AddressType socks5AddressType) {
+                                  Socks5AddressType socks5AddressType, ProxyDecision decision,
+                                  String dstAddr, int dstPort) {
         if (!ctx.channel().isActive()) {
             //客户端已在出站连接建立期间断开：relay 未激活，其 channelInactive 已过（无级联），直接关闭出站连接防止孤儿化
             log.info("客户端连接已断开，关闭出站连接");
@@ -93,6 +101,11 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
         ctx.pipeline().remove(Socks5CommandRequestDecoder.class);
         ctx.pipeline().remove(Socks5CommandRequestInboundHandler.class);
         relayHandler.activate(outboundChannel);
+        //补全监控计数目标：成功建连后才标记，页面展示该连接的协议/模式/目标
+        TrafficCounter counter = ctx.channel().attr(ConnectionTrafficHandler.COUNTER_KEY).get();
+        if (counter != null) {
+            counter.setTarget("socks5", decision, dstAddr, dstPort);
+        }
         DefaultSocks5CommandResponse commandResponse = new DefaultSocks5CommandResponse(Socks5CommandStatus.SUCCESS, socks5AddressType);
         ctx.writeAndFlush(commandResponse);
     }
@@ -105,7 +118,7 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
     }
 
     private void directConnect(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg,
-                               Socks5AddressType socks5AddressType, Bootstrap bootstrap) {
+                               Socks5AddressType socks5AddressType, Bootstrap bootstrap, ProxyDecision decision) {
         log.info("[direct][socks5] {}:{}", msg.dstAddr(), msg.dstPort());
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
@@ -119,7 +132,8 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
             Channel clientChannel = ctx.channel();
             if (f.isSuccess()) {
                 //所有对客户端 pipeline 的操作调度到客户端 eventLoop，与原 IO 事件串行
-                clientChannel.eventLoop().execute(() -> onConnectSuccess(ctx, f.channel(), socks5AddressType));
+                clientChannel.eventLoop().execute(() ->
+                        onConnectSuccess(ctx, f.channel(), socks5AddressType, decision, msg.dstAddr(), msg.dstPort()));
             } else {
                 clientChannel.eventLoop().execute(() -> onConnectFailure(ctx, socks5AddressType, msg.dstAddr(), msg.dstPort()));
             }
@@ -127,7 +141,7 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
     }
 
     private void proxyConnect(ChannelHandlerContext ctx, DefaultSocks5CommandRequest msg,
-                              Socks5AddressType socks5AddressType, Bootstrap bootstrap) {
+                              Socks5AddressType socks5AddressType, Bootstrap bootstrap, ProxyDecision decision) {
         log.info("[proxy][socks5] {}:{}", msg.dstAddr(), msg.dstPort());
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
@@ -146,7 +160,8 @@ public class Socks5CommandRequestInboundHandler extends SimpleChannelInboundHand
         future.addListener((ChannelFuture f) -> {
             Channel clientChannel = ctx.channel();
             if (f.isSuccess()) {
-                clientChannel.eventLoop().execute(() -> onConnectSuccess(ctx, f.channel(), socks5AddressType));
+                clientChannel.eventLoop().execute(() ->
+                        onConnectSuccess(ctx, f.channel(), socks5AddressType, decision, msg.dstAddr(), msg.dstPort()));
             } else {
                 clientChannel.eventLoop().execute(() -> onConnectFailure(ctx, socks5AddressType,
                         configProperties.getTrojanServerHost(), configProperties.getTrojanServerPort()));

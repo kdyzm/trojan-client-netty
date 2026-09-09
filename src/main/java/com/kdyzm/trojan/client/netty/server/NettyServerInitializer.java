@@ -1,6 +1,8 @@
 package com.kdyzm.trojan.client.netty.server;
 
 import com.kdyzm.trojan.client.netty.inbound.RelayHandler;
+import com.kdyzm.trojan.client.netty.monitor.ConnectionTrafficHandler;
+import com.kdyzm.trojan.client.netty.monitor.TrafficMonitor;
 import com.kdyzm.trojan.client.netty.inbound.Socks5CommandRequestInboundHandler;
 import com.kdyzm.trojan.client.netty.inbound.Socks5InitialRequestInboundHandler;
 import com.kdyzm.trojan.client.netty.inbound.Socks5PasswordAuthRequestInboundHandler;
@@ -34,10 +36,14 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final EventLoopGroup clientWorkGroup;
 
-    public NettyServerInitializer(EventLoopGroup clientWorkGroup, ConfigProperties configProperties, ConfigUtil configUtil) {
+    private final TrafficMonitor trafficMonitor;
+
+    public NettyServerInitializer(EventLoopGroup clientWorkGroup, ConfigProperties configProperties,
+                                  ConfigUtil configUtil, TrafficMonitor trafficMonitor) {
         this.configProperties = configProperties;
         this.configUtil = configUtil;
         this.clientWorkGroup = clientWorkGroup;
+        this.trafficMonitor = trafficMonitor;
     }
 
     /**
@@ -52,6 +58,8 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
         ChannelPipeline pipeline = ch.pipeline();
         //处理socks5协议
         if (localPort == configProperties.getSocks5Port()) {
+            //链头度量：统计双向原始字节并注册连接监控
+            pipeline.addLast(new ConnectionTrafficHandler(trafficMonitor));
             //全空闲超时（读/写任一活跃即不算空闲）：relay 收到 IdleStateEvent 后双向回收（握手期与透传期共用 300s）。
             //不能只统计读空闲：下行数据（服务器→浏览器）在客户端腿上表现为写，reader-idle 会误切断活跃下载/流
             pipeline.addLast(new IdleStateHandler(0, 0, 300));
@@ -76,6 +84,8 @@ public class NettyServerInitializer extends ChannelInitializer<SocketChannel> {
             pipeline.addLast(relayHandler);
             //处理http协议
         } else {
+            //链头度量：统计双向原始字节并注册连接监控
+            pipeline.addLast(new ConnectionTrafficHandler(trafficMonitor));
             //全空闲超时（读/写任一活跃即不算空闲）：透传期由 relay 双向回收；读与写都静默 300s 才回收，
             //下行下载流在客户端腿上是写，只统计读会误回收活跃连接
             pipeline.addLast(new IdleStateHandler(0, 0, 300));

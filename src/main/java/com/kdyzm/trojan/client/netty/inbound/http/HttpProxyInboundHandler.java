@@ -4,6 +4,8 @@ import com.kdyzm.trojan.client.netty.encoder.TrojanRequestEncoder;
 import com.kdyzm.trojan.client.netty.inbound.BlackListInboundHandler;
 import com.kdyzm.trojan.client.netty.inbound.RelayHandler;
 import com.kdyzm.trojan.client.netty.models.HostPort;
+import com.kdyzm.trojan.client.netty.monitor.ConnectionTrafficHandler;
+import com.kdyzm.trojan.client.netty.monitor.TrafficCounter;
 import com.kdyzm.trojan.client.netty.router.ProxyDecision;
 import com.kdyzm.trojan.client.netty.router.ProxyRouter;
 import com.kdyzm.trojan.client.netty.properties.ConfigProperties;
@@ -103,6 +105,15 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
             ctx.pipeline().addLast(new BlackListInboundHandler());
             ctx.pipeline().remove(HttpProxyInboundHandler.class);
             ctx.pipeline().fireChannelRead(req);
+            //端口归一化：与成功路径展示一致（CONNECT 默认 443，其余默认 80），避免监控页显示 : -1
+            if (port == -1) {
+                port = method.equals(HttpMethod.CONNECT) ? 443 : 80;
+            }
+            //补全监控计数目标：黑名单拦截同样在监控页展示（模式=BLOCK，字节统计仅拦截页回放）
+            TrafficCounter counter = ctx.channel().attr(ConnectionTrafficHandler.COUNTER_KEY).get();
+            if (counter != null) {
+                counter.setTarget("http", ProxyDecision.BLOCK, host, port);
+            }
             return;
         }
         //初始化请求暂存：普通请求头编码入缓冲；CONNECT 无体
@@ -112,9 +123,9 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
             }
             pending = null;
             if (decision == ProxyDecision.PROXY) {
-                proxyConnectTunnel(ctx, host, port, req.protocolVersion());
+                proxyConnectTunnel(decision, ctx, host, port, req.protocolVersion());
             } else {
-                directConnectTunnel(ctx, host, port, req.protocolVersion());
+                directConnectTunnel(decision, ctx, host, port, req.protocolVersion());
             }
         } else {
             if (port == -1) {
@@ -124,9 +135,9 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
             pending = Unpooled.buffer();
             appendPending(req);
             if (decision == ProxyDecision.PROXY) {
-                proxyConnectHttp(ctx, host, port);
+                proxyConnectHttp(decision, ctx, host, port);
             } else {
-                directConnectHttp(ctx, host, port);
+                directConnectHttp(decision, ctx, host, port);
             }
         }
     }
@@ -149,7 +160,8 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
      * 连接建立成功后的统一收尾（执行于客户端 eventLoop）：
      * 普通请求先写出暂存的头部字节，再切换 pipeline 为字节透传并激活 relay
      */
-    private void activateRelay(ChannelHandlerContext ctx, Channel outboundChannel, boolean tunnel) {
+    private void activateRelay(ChannelHandlerContext ctx, Channel outboundChannel, boolean tunnel,
+                               ProxyDecision decision, String host, int port) {
         if (!ctx.channel().isActive()) {
             //客户端已在出站连接建立期间断开：relay 未激活，其 channelInactive 已过（无级联），
             //释放暂存数据并关闭出站连接，防止孤儿化
@@ -173,6 +185,11 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
             pending = null;
         }
         relayHandler.activate(outboundChannel);
+        //补全监控计数目标：成功建连后才标记，tunnel 与非 tunnel 均展示协议/模式/目标
+        TrafficCounter counter = ctx.channel().attr(ConnectionTrafficHandler.COUNTER_KEY).get();
+        if (counter != null) {
+            counter.setTarget("http", decision, host, port);
+        }
         if (requestEncoderChannel != null) {
             requestEncoderChannel.finishAndReleaseAll();
             requestEncoderChannel = null;
@@ -207,7 +224,8 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                 .connect();
     }
 
-    private void proxyConnectTunnel(ChannelHandlerContext ctx, String host, int port, HttpVersion version) {
+    private void proxyConnectTunnel(ProxyDecision decision, ChannelHandlerContext ctx, String host, int port,
+                                    HttpVersion version) {
         log.info("[proxy][connect] {}:{}", host, port);
         int atyp = IpUtil.parseAddress(host).byteValue();
         ChannelFuture future = connectOutbound(configProperties.getTrojanServerHost(),
@@ -227,7 +245,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                     //先回 200（浏览器收到后才发送 TLS 数据），随后切换透传
                     DefaultFullHttpResponse ok = new DefaultFullHttpResponse(version, new HttpResponseStatus(200, "OK"));
                     ctx.writeAndFlush(ok).addListener((ChannelFuture done) ->
-                            clientChannel.eventLoop().execute(() -> activateRelay(ctx, f.channel(), true)));
+                            clientChannel.eventLoop().execute(() -> activateRelay(ctx, f.channel(), true, decision, host, port)));
                 });
             } else {
                 clientChannel.eventLoop().execute(() -> onConnectFailure(ctx,
@@ -236,7 +254,8 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
         });
     }
 
-    private void directConnectTunnel(ChannelHandlerContext ctx, String host, int port, HttpVersion version) {
+    private void directConnectTunnel(ProxyDecision decision, ChannelHandlerContext ctx, String host, int port,
+                                     HttpVersion version) {
         log.info("[direct][connect] {}:{}", host, port);
         ChannelFuture future = connectOutbound(host, port, new ChannelInitializer<SocketChannel>() {
             @Override
@@ -250,7 +269,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
                 clientChannel.eventLoop().execute(() -> {
                     DefaultFullHttpResponse ok = new DefaultFullHttpResponse(version, new HttpResponseStatus(200, "OK"));
                     ctx.writeAndFlush(ok).addListener((ChannelFuture done) ->
-                            clientChannel.eventLoop().execute(() -> activateRelay(ctx, f.channel(), true)));
+                            clientChannel.eventLoop().execute(() -> activateRelay(ctx, f.channel(), true, decision, host, port)));
                 });
             } else {
                 clientChannel.eventLoop().execute(() -> onConnectFailure(ctx, host, port));
@@ -258,7 +277,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
         });
     }
 
-    private void proxyConnectHttp(ChannelHandlerContext ctx, String host, int port) {
+    private void proxyConnectHttp(ProxyDecision decision, ChannelHandlerContext ctx, String host, int port) {
         log.info("[proxy][http] {}:{}", host, port);
         int atyp = IpUtil.parseAddress(host).byteValue();
         ChannelFuture future = connectOutbound(configProperties.getTrojanServerHost(),
@@ -274,7 +293,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
         future.addListener((ChannelFuture f) -> {
             Channel clientChannel = ctx.channel();
             if (f.isSuccess()) {
-                clientChannel.eventLoop().execute(() -> activateRelay(ctx, f.channel(), false));
+                clientChannel.eventLoop().execute(() -> activateRelay(ctx, f.channel(), false, decision, host, port));
             } else {
                 clientChannel.eventLoop().execute(() -> onConnectFailure(ctx,
                         configProperties.getTrojanServerHost(), configProperties.getTrojanServerPort()));
@@ -282,7 +301,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
         });
     }
 
-    private void directConnectHttp(ChannelHandlerContext ctx, String host, int port) {
+    private void directConnectHttp(ProxyDecision decision, ChannelHandlerContext ctx, String host, int port) {
         log.info("[direct][http] {}:{}", host, port);
         ChannelFuture future = connectOutbound(host, port, new ChannelInitializer<SocketChannel>() {
             @Override
@@ -293,7 +312,7 @@ public class HttpProxyInboundHandler extends SimpleChannelInboundHandler<HttpObj
         future.addListener((ChannelFuture f) -> {
             Channel clientChannel = ctx.channel();
             if (f.isSuccess()) {
-                clientChannel.eventLoop().execute(() -> activateRelay(ctx, f.channel(), false));
+                clientChannel.eventLoop().execute(() -> activateRelay(ctx, f.channel(), false, decision, host, port));
             } else {
                 clientChannel.eventLoop().execute(() -> onConnectFailure(ctx, host, port));
             }
