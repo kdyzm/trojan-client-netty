@@ -4,3 +4,10 @@ logs/
 log/
 *.class
 .idea/
+CLAUDE.md
+.claude/
+docs/
+.superpowers/
+# MCP 配置（含数据库连接信息，不提交）
+.mcp.json
+.playwright-mcp/
